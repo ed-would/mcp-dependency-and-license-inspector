@@ -1,0 +1,22 @@
+node_modules/
+.DS_Store
+.vscode
+
+# Python
+.venv/
+.venv-check/
+__pycache__/
+*.egg-info/
+*.egg
+
+# Secrets and env (never commit real values)
+.env
+.env.*
+!.env.example
+*.env.local
+*.secret
+*.key
+*.pem
+*.p12
+secrets/
+*.credentials

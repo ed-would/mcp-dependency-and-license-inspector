@@ -1,0 +1,12 @@
+allowed_licenses:
+  - MIT
+  - Apache-2.0
+  - BSD-3-Clause
+  - ISC
+denied_licenses:
+  - GPL-2.0
+  - GPL-3.0
+  - AGPL-3.0
+deny_unknown_license: false
+block_critical_cve: true
+block_high_cve: false

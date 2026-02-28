@@ -1,0 +1,87 @@
+mcp-codenrock/
+├── requirements.txt            # Основные зависимости
+├── requirements-dev.txt        # Зависимости для разработки
+├── README.md                   # Документация
+├── DEMO.md                     # Сценарий демо
+├── mcp.json                    # Конфигурация MCP-клиента
+├── Dockerfile                  # Сборка образа
+├── .dockerignore
+├── .gitignore
+│
+├── src/
+│   └── mcp_dependency_inspector/
+│       ├── __init__.py
+│       ├── server.py           # Точка входа MCP-сервера
+│       ├── entrypoint.py       # CLI/запуск сервера
+│       ├── config.py           # Конфигурация
+│       │
+│       ├── core/
+│       │   ├── manifest_scanner.py   # Сканирование манифестов
+│       │   ├── vulnerability_scanner.py
+│       │   ├── license_scanner.py
+│       │   ├── license_data.py
+│       │   ├── policy_engine.py      # Проверка политики лицензий
+│       │   ├── reporter.py           # Формирование отчётов
+│       │   └── sbom_builder.py       # Генерация SBOM
+│       │
+│       ├── parsers/
+│       │   ├── pip.py          # requirements.txt, pyproject.toml
+│       │   └── npm.py          # package.json
+│       │
+│       └── models/
+│           ├── __init__.py
+│           ├── package.py
+│           ├── policy.py
+│           ├── vulnerability.py
+│           └── license_model.py
+│
+├── tests/
+│   ├── conftest.py
+│   ├── fixtures/
+│   │   ├── package.json
+│   │   ├── requirements.txt
+│   │   ├── pyproject.toml
+│   │   └── policy_deny_gpl.yaml
+│   ├── test_parsers.py
+│   ├── test_manifest_scanner.py
+│   ├── test_license_scanner.py
+│   ├── test_policy_engine.py
+│   ├── test_reporter.py
+│   ├── test_sbom_builder.py
+│   ├── test_vulnerability_scanner.py
+│   └── test_mcp_tools_integration.py
+│
+├── demo_project/               # Проект для демо
+│   ├── README.md
+│   ├── package.json
+│   ├── pyproject.toml
+│   ├── requirements.txt
+│   ├── policy_strict.yaml
+│   └── pkg_with_gpl/
+│       └── package.json
+│
+├── plan/                       # Планирование и архитектура
+│   ├── 01-domain-and-user-needs.md
+│   ├── 02-existing-mcp-servers.md
+│   ├── 03-current-practices-and-tools.md
+│   ├── 04-architecture-and-api.md
+│   ├── 05-value-proposition.md
+│   └── 06-implementation-plan.md
+│
+├── plan-demo/
+│   ├── 01-demo-scenario-plan.md
+│   └── 02-demo-file-specs.md
+│
+└── agents/                     # Описания агентов (Cursor)
+    ├── agents.md
+    ├── api-agent.md
+    ├── deploy-agent.md
+    ├── dev-agent.md
+    ├── debugger-agent.md
+    ├── docs-agent.md
+    ├── git-agent.md
+    ├── lint-agent.md
+    ├── pm-agent.md
+    ├── qa-agent.md
+    ├── security-agent.md
+    └── verifier-agent.md

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "dependency-license-inspector": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "mcp_dependency_inspector.server"],
+      "env": { "DEMO_MODE": "true" }
+    }
+  }
+}

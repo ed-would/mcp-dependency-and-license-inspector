@@ -1,0 +1,36 @@
+security:
+  # Ограничение сканирования только внутри этой директории
+  allowed_directories:
+    - ./projects
+    - ./workspace
+  
+  # Запрет на сканирование системных путей
+  blocked_directories:
+    - /etc
+    - /usr
+    - C:\\Windows
+  
+  # Настройки кэширования
+  cache:
+    enabled: true
+    ttl_seconds: 3600
+    max_size_mb: 500
+    encryption: false  # Включить для enterprise
+  
+  # Настройки API
+  api:
+    osv_dev:
+      timeout_seconds: 30
+      max_retries: 3
+    libraries_io:
+      api_key_env: "LIBRARIES_IO_API_KEY"  # Опционально
+      timeout_seconds: 30
+      max_retries: 3
+  
+  # Политики соответствия
+  policies:
+    blocked_licenses:
+      - GPL-3.0
+      - AGPL-3.0
+    max_severity_allowed: "high"  # Блокировать critical
+    require_sbom: true

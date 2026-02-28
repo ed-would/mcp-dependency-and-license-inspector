@@ -1,0 +1,80 @@
+# .cursorrules — Dependency & License Inspector MCP
+
+Reference: plan/06-implementation-plan.md, plan/04-architecture-and-api.md.
+
+---
+
+## 1. Anti-Lazy & Output Rules (Critical)
+
+- Think step-by-step.
+- Always output full code: never use placeholders like `# ... existing code ...` or `# ... rest of the code ...`.
+- Full implementation: if changing a file, provide complete content where practical, not only a patch.
+- Concise explanations: only necessary, focused on code differences.
+- No unsolicited refactoring: only modify what is explicitly requested; do not change unrelated patterns.
+
+---
+
+## 2. Project Context & Structure
+
+- **Product:** Deterministic MCP server «Инспектор зависимостей и лицензий» (dependency and license inspection, policy compliance, SBOM). See `plan/06-implementation-plan.md`.
+- **Folder structure:** Source under `src/mcp_dependency_inspector/` (server.py, tools/, core/, parsers/, scanners/, models/). Tests under `tests/` with fixtures in `tests/fixtures/`. Plan and docs in `plan/`, `docs/`. See `plan/04-architecture-and-api.md` and project-structure.txt.
+- **Tech stack:** Python 3.11+, MCP SDK (stdio), Pydantic, tomli, ruamel.yaml, httpx. No LLM calls in core; optional HTTP (e.g. OSV API) with fallback to stubs when `DEMO_MODE=true` or offline.
+- **Dependency management:** Pin versions in `requirements.txt` and `requirements-dev.txt`; do not use `latest`. Keep production image minimal (no pytest/dev deps in final Docker image).
+
+---
+
+## 3. Determinism & Testing
+
+- **Determinism:** MCP tool results must be determined only by inputs (project path, manifest files, policy config). No LLM in core logic.
+- **Tests:** All tests must pass without LLM and without paid APIs. Use fixtures in `tests/fixtures/` and mocks for HTTP (e.g. OSV). Use `DEMO_MODE=true` or stub data when simulating offline/CI.
+- **Demo scenario:** The flow in `DEMO.md` must run without external paid services or API keys; use OSV (free) or stubs.
+
+---
+
+## 4. Security & Repository Hygiene
+
+- **No secrets:** Never store secrets, tokens, API keys, or passwords in the repo. Do not commit `.env` with real values; only `.env.example` with variable names and empty/sample placeholders.
+- **Config:** Reference secrets via environment variables (e.g. `api_key_env: "LIBRARIES_IO_API_KEY"`); never hardcode. Use stub/demo configs for local and CI.
+- **Validation:** Use Pydantic for all tool inputs and outputs; validate paths and policy payloads.
+
+---
+
+## 5. Code Style & Quality (Python)
+
+- **Types:** Use type hints everywhere; avoid `any`. Prefer Pydantic models for structured data (packages, policy, reports).
+- **Style:** Follow PEP 8. Use `ruff check --fix` and `ruff format`; run `mypy` on `src/`.
+- **Naming:** Modules and files snake_case; classes PascalCase; functions and variables snake_case.
+- **Error handling:** Use try/except for I/O and external calls (e.g. OSV, file read); log errors consistently; return structured errors to MCP clients where appropriate.
+
+---
+
+## 6. Docker & Resources
+
+- **Image size:** Final Docker image must be ≤ 500 MB. Use multi-stage build; slim/alpine base; no pip cache in final layer.
+- **Resource limits:** Design for CPU 2.0, RAM 2048 MB. Document or exemplify `docker run --memory=2048m --cpus=2` in README or DEMO.md.
+
+---
+
+## 7. Behaviour & Interaction
+
+- **Plan before acting:** Create a short plan (max 5 bullets) before editing code.
+- **Ask for clarification:** If context is missing or the request is ambiguous, ask before modifying code.
+- **Security first:** Validate and sanitize inputs; no injection or path traversal; keep dependency and license logic isolated from untrusted data.
+
+---
+
+## 8. Git
+
+- Do not duplicate commit message in chat window.
+- After finishing git push, respond only that the command is complete; do not provide details or extra output.
+
+---
+
+## 9. Token preservation
+
+- **Responses:** Be concise. Prefer short confirmations over long summaries; skip restating the user’s request or listing unchanged files.
+- **After commands:** For successful runs (tests, lint, build, push), one short line is enough (e.g. “Done.” or “Tests passed.”). No logs, no step-by-step recap unless the user asks.
+- **Explanations:** Only explain when it adds value (non-obvious behaviour, trade-offs, or explicit “why?”). Omit filler and repeated context.
+- **Tool use:** Prefer targeted reads/edits (specific files or line ranges) over full-file or broad searches when the target is known. Avoid re-reading the same file unnecessarily.
+- **Plans:** Keep pre-edit plans to a few bullets; expand only when the task is complex or the user asks.
+- **No echo:** Do not repeat command output, large diffs, or file contents in the reply when the user can see them in the UI.

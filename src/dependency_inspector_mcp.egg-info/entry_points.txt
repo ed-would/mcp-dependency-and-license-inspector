@@ -1,0 +1,2 @@
+[console_scripts]
+dependency-inspector-mcp = mcp_dependency_inspector.server:main

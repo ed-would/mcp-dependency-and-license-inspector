@@ -1,0 +1,37 @@
+# Tests and dev — not needed in production image
+tests/
+requirements-dev.txt
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Git and IDE
+.git/
+.gitignore
+.vscode/
+.cursor/
+*.md
+!README.md
+
+# Local env and secrets (never in image)
+.env
+.env.*
+!.env.example
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.venv/
+.venv-check/
+
+# Plan and docs (optional; reduce context)
+plan/
+docs/
+DEMO.md
+.cursorrules
+.cursorignore

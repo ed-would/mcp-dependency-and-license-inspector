@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: dependency-inspector-mcp
+Version: 0.1.0
+Summary: Deterministic MCP server for dependency and license inspection, policy compliance, and SBOM generation
+Author: MCP Dependency Inspector Team
+Requires-Python: >=3.11
+Requires-Dist: fastmcp>=2.3.0
+Requires-Dist: mcp>=1.6.0
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: tenacity>=8.2.3
+Requires-Dist: tomli>=2.0.1
+Requires-Dist: ruamel.yaml>=0.18.6
+Requires-Dist: packaging>=24.0
+Requires-Dist: pydantic>=2.7.0
+Requires-Dist: pydantic-settings>=2.3.0
+Requires-Dist: license-expression>=30.3.1
+Requires-Dist: python-dotenv>=1.0.1
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

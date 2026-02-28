@@ -1,0 +1,9 @@
+{
+  "name": "demo-mcp-inspector",
+  "version": "1.0.0",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.15",
+    "express": "^4.18.2"
+  }
+}

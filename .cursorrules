@@ -1,6 +1,6 @@
 # .cursorrules — Dependency & License Inspector MCP
 
-Reference: plan/06-implementation-plan.md, plan/04-architecture-and-api.md.
+Reference: plan/05-architecture-and-api.md, plan/06-implementation-plan.md, plan/07-next-steps.md. Structure: project-structure.txt. Agents: agents/, .agents/skills/.
 
 ---
 
@@ -17,9 +17,9 @@ Reference: plan/06-implementation-plan.md, plan/04-architecture-and-api.md.
 ## 2. Project Context & Structure
 
 - **Product:** Deterministic MCP server «Инспектор зависимостей и лицензий» (dependency and license inspection, policy compliance, SBOM). See `plan/06-implementation-plan.md`.
-- **Folder structure:** Source under `src/mcp_dependency_inspector/` (server.py, tools/, core/, parsers/, scanners/, models/). Tests under `tests/` with fixtures in `tests/fixtures/`. Plan and docs in `plan/`, `docs/`. See `plan/04-architecture-and-api.md` and project-structure.txt.
+- **Folder structure:** Source under `src/mcp_dependency_inspector/` (server.py, core/, parsers/, models/). Tests under `tests/` with fixtures in `tests/fixtures/`. Plan in `plan/`, docs in `docs/`, presentation in `presentation/`. See `project-structure.txt` and `plan/05-architecture-and-api.md`.
 - **Tech stack:** Python 3.11+, MCP SDK (stdio), Pydantic, tomli, ruamel.yaml, httpx. No LLM calls in core; optional HTTP (e.g. OSV API) with fallback to stubs when `DEMO_MODE=true` or offline.
-- **Dependency management:** Pin versions in `requirements.txt` and `requirements-dev.txt`; do not use `latest`. Keep production image minimal (no pytest/dev deps in final Docker image).
+- **Dependency management:** Pin exact versions in `requirements.txt` and `requirements-dev.txt`; no `latest` or wildcards. Keep production image minimal (no pytest/dev deps in final Docker image).
 
 ---
 
@@ -28,6 +28,16 @@ Reference: plan/06-implementation-plan.md, plan/04-architecture-and-api.md.
 - **Determinism:** MCP tool results must be determined only by inputs (project path, manifest files, policy config). No LLM in core logic.
 - **Tests:** All tests must pass without LLM and without paid APIs. Use fixtures in `tests/fixtures/` and mocks for HTTP (e.g. OSV). Use `DEMO_MODE=true` or stub data when simulating offline/CI.
 - **Demo scenario:** The flow in `DEMO.md` must run without external paid services or API keys; use OSV (free) or stubs.
+- **Exclude dirs:** Scans exclude `node_modules`, `.venv`, `__pycache__`, `target`, `.git` by default (config.py).
+
+---
+
+## 3b. Documentation & Plan 07
+
+- **Docs output:** `docs/` — product-summary, README-pitch, README-developers, FAQ, speaker-notes, jury-qa, competitive-positioning. See `plan/07-next-steps.md`.
+- **Plan sync:** Keep `plan/01–07` consistent with implementation; update `project-structure.txt` when adding directories.
+- **Presentation:** `presentation/` — Slidev; align terminology with `plan/05-architecture-and-api.md`.
+- **Agents & skills:** Use `agents/` and `.agents/skills/` when task matches agent scope (e.g. docs-agent for Plan 07 tasks 1–5, pm-agent for 6–7).
 
 ---
 
@@ -66,7 +76,7 @@ Reference: plan/06-implementation-plan.md, plan/04-architecture-and-api.md.
 ## 8. Git
 
 - Do not duplicate commit message in chat window.
-- After finishing git push, respond only that the command is complete; do not provide details or extra output.
+- Be concise when reporting git outcomes: hash and one-line summary unless the user asks for details.
 
 ---
 

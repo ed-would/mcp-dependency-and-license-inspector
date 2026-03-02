@@ -1,6 +1,11 @@
-mcp-codenrock/
+mcp-dependency-and-license-inspector/
 ├── requirements.txt            # Основные зависимости
 ├── requirements-dev.txt        # Зависимости для разработки
+├── setup.py                    # Установка пакета
+├── config.yaml                 # Конфигурация MCP
+├── .env.example                # Шаблон переменных окружения (без секретов)
+├── .cursorrules                # Правила проекта для Cursor
+├── .cursorignore
 ├── README.md                   # Документация
 ├── DEMO.md                     # Сценарий демо
 ├── mcp.json                    # Конфигурация MCP-клиента
@@ -54,34 +59,57 @@ mcp-codenrock/
 ├── demo_project/               # Проект для демо
 │   ├── README.md
 │   ├── package.json
+│   ├── package-lock.json
 │   ├── pyproject.toml
 │   ├── requirements.txt
 │   ├── policy_strict.yaml
 │   └── pkg_with_gpl/
 │       └── package.json
 │
+├── docs/                       # Документация (Plan 07)
+│   ├── product-summary.md     # Резюме продукта RU+EN
+│   ├── README-pitch.md        # Краткий питч для руководства
+│   └── README-developers.md   # Подробное описание для разработчиков и AppSec
+│
 ├── plan/                       # Планирование и архитектура
 │   ├── 01-domain-and-user-needs.md
 │   ├── 02-existing-mcp-servers.md
 │   ├── 03-current-practices-and-tools.md
+│   ├── 04-value-proposition.md
 │   ├── 04-architecture-and-api.md
 │   ├── 05-value-proposition.md
-│   └── 06-implementation-plan.md
+│   ├── 05-architecture-and-api.md
+│   ├── 06-implementation-plan.md
+│   └── 07-next-steps.md       # Следующие шаги развития
 │
 ├── plan-demo/
 │   ├── 01-demo-scenario-plan.md
 │   └── 02-demo-file-specs.md
 │
-└── agents/                     # Описания агентов (Cursor)
-    ├── agents.md
-    ├── api-agent.md
-    ├── deploy-agent.md
-    ├── dev-agent.md
-    ├── debugger-agent.md
-    ├── docs-agent.md
-    ├── git-agent.md
-    ├── lint-agent.md
-    ├── pm-agent.md
-    ├── qa-agent.md
-    ├── security-agent.md
-    └── verifier-agent.md
+├── presentation/               # Презентация Slidev
+│   ├── dependency-inspector-mcp-slidev.md
+│   ├── tools/                 # Скриншоты инструментов
+│   ├── resources/
+│   ├── prompts/
+│   └── wip-agents/
+│
+├── agents/                     # Описания агентов (Cursor)
+│   ├── agents.md
+│   ├── api-agent.md
+│   ├── deploy-agent.md
+│   ├── dev-agent.md
+│   ├── debugger-agent.md
+│   ├── docs-agent.md
+│   ├── git-agent.md
+│   ├── lint-agent.md
+│   ├── pm-agent.md
+│   ├── qa-agent.md
+│   ├── security-agent.md
+│   └── verifier-agent.md
+│
+└── .agents/
+    └── skills/                 # Скиллы для агентов
+        ├── docs-and-demo-writer/
+        ├── dev-mcp-server-engineer/
+        ├── security-compliance-reviewer/
+        └── roadmap-and-positioning-writer/

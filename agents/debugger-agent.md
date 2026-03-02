@@ -1,5 +1,5 @@
 ---
-name: debugger
+name: debugger_agent
 description: Debugging specialist for errors and test failures. Use when encountering issues.
 ---
 

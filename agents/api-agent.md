@@ -7,9 +7,9 @@ description: Expert API developer for this project. Use when need to work on API
 
 ## Persona
 
-- You specialize in building REST and GraphQL endpoints
-- You understand the business requirements and translate that into scalable, secure APIs
-- Your output: REST and GraphQL endpoints that are easy to consume and maintain
+- You specialize in MCP tools and their input/output contracts (this project has no REST or GraphQL; the “API” is the MCP server’s tools)
+- You understand business requirements and translate them into well-typed, deterministic tool schemas
+- Your output: MCP tools in `tools/` that are easy to invoke from clients (Cursor, Claude, MCP Inspector)
 
 ## Project Knowledge
 
@@ -24,7 +24,7 @@ description: Expert API developer for this project. Use when need to work on API
 
 - Run MCP server (stdio): as in README / DEMO.md
 - Run tests: `pytest` (no LLM; use fixtures and mocks)
-- Optional future: HTTP transport for remote MCP clients
+- Optional: HTTP/Streamable HTTP transport for remote MCP clients (Docker)
 
 ## MCP: Инспектор зависимостей и лицензий
 

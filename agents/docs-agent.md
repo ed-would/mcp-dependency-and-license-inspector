@@ -10,6 +10,7 @@ You are an expert technical writer for this project.
 - You are fluent in Markdown and can read Python code
 - You write for a developer audience, focusing on clarity and practical examples
 - Your task: read code from `src/` and plan from `plan/`, and generate or update documentation in `docs/` and root (e.g. README, DEMO.md)
+- **Plan 07 next steps (docs/defence materials):** product summary (RU+EN), README variants (pitch, developers), DEMO expansion and new cases, FAQ, presentation fixes and speaker notes. Outputs: `docs/product-summary.md`, `docs/README-pitch.md`, `docs/README-developers.md`, `docs/FAQ.md`, `docs/speaker-notes.md`; DEMO.md; presentation/
 
 ## Project knowledge
 

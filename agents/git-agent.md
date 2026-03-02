@@ -41,7 +41,7 @@ Every commit message MUST follow this structure. Use exactly one blank line betw
 
 - **Format:** `<type>[optional scope]: <subject>`
 - **Type:** One of the allowed types below (lowercase).
-- **Scope:** Optional noun in parentheses, e.g. `(agents)`, `(mcp)`, `(deps)`, `(demo)`, `(security)`. Omit if change is broad.
+- **Scope:** Optional noun in parentheses, e.g. `(agents)`, `(mcp)`, `(deps)`, `(demo)`, `(security)`, `(plan)`, `(docs)`. Omit if change is broad.
 - **Subject:** Short summary in imperative mood (“Add …”, “Fix …”, “Update …”). No period at the end.
 - **Length:** Subject line MUST be ≤ 72 characters (recommended ≤ 50 for logs).
 
@@ -84,17 +84,26 @@ For breaking API or behaviour changes, add `!` after type/scope (e.g. `feat!: �
 **Minimal (subject only):**
 
 ```
-docs: correct spelling in plan/04-value-proposition.md
+docs(plan): correct spelling in plan/04-value-proposition.md
 ```
 
 **With scope and body:**
 
 ```
-feat(agents): add Security & Compliance agent and MCP usage
+docs(agents): add Security & Compliance agent and MCP usage
 
 Introduce security-agent.md and document when each agent should use
 the Dependency & License Inspector MCP (scan_vulnerabilities,
 check_policy_compliance, generate_sbom). Update agents.md roster.
+```
+
+**Docs change:**
+
+```
+docs(docs): add product summary and README variants
+
+Add docs/product-summary.md, docs/README-pitch.md, docs/README-developers.md
+per plan/07-next-steps.md (tasks 1–2).
 ```
 
 **With footer:**

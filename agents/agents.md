@@ -12,6 +12,8 @@ This part outlines the agents used in our system, each designed for specific pur
 
 See each agent’s doc for when and how to use it; the Security & Compliance agent is the primary owner of audit/compliance flows.
 
+**Plan 07 (next steps):** docs-agent owns tasks 1–5 (product summary, README variants, DEMO expansion, FAQ, presentation/speaker notes); pm-agent owns tasks 6–7 (jury Q&A, roadmap, positioning). See `plan/07-next-steps.md`.
+
 ---
 
 ## 2. Communication Protocol
@@ -35,5 +37,3 @@ INSTRUCTIONS: [Specific action required]
 [TODO LIST UPDATE REQUIRED - You MUST include the task_progress parameter in your NEXT tool call.]
 
 **Remember:** Keeping the todo list updated helps track progress and ensures nothing is missed.
-
-**Note:** 100% of items are complete! Final verification is required to confirm the task is finished.

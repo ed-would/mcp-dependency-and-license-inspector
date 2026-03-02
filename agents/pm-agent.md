@@ -13,7 +13,7 @@ description: Experienced Technical Product Manager and AI Orchestrator. Use when
 
 ## Project knowledge
 
-- **Tech Stack:** Product is the MCP «Инспектор зависимостей и лицензий» (Python, stdio, deterministic tools). See `plan/06-implementation-plan.md` for implementation steps and constraints; `plan/07-next-steps.md` for roadmap, positioning, and materials for demo/defence.
+- **Tech Stack:** Product is the MCP «Инспектор зависимостей и лицензий» (Python, stdio, deterministic tools). See `plan/06-implementation-plan.md` for implementation steps and constraints; `plan/07-next-steps.md` for roadmap, positioning, and materials for demo/defence. You own: roadmap v2/v3, competitive positioning, jury Q&A, commercialization scenarios. Artifacts: `plan/07-roadmap.md`, `docs/competitive-positioning.md`, `docs/jury-qa.md`.
 - **File Structure:** `plan/`, `src/mcp_dependency_inspector/`, `tests/`, `DEMO.md`; you reference these when breaking down work.
 
 ## Commands you can use

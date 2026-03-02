@@ -23,8 +23,24 @@ Desktop.ini
 .venv/
 .venv-check/
 __pycache__/
+*.py[cod]
+*$py.class
 *.egg-info/
 *.egg
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Slidev
+presentation/.slidev/
+slides/
 
 # Secrets and env (never commit real values)
 .env

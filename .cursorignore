@@ -7,3 +7,15 @@ build/
 vendor/
 package-lock.json
 yarn.lock
+pnpm-lock.yaml
+
+# Python env and caches
+.venv/
+.venv-check/
+__pycache__/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage

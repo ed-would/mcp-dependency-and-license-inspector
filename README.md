@@ -281,7 +281,7 @@ docker run --rm -p 8000:8000 --memory=2048m --cpus=2 -e DEMO_MODE=true dependenc
 
 ### Ограничения доступа MCP (безопасность)
 
-Настраиваются переменными окружения (значения по умолчанию — в таблице). Подробнее — в [plan/04-architecture-and-api.md](plan/04-architecture-and-api.md).
+Настраиваются переменными окружения (значения по умолчанию — в таблице). Подробнее — в [plan/05-architecture-and-api.md](plan/05-architecture-and-api.md).
 
 | Параметр                   | Описание                                                                                 | По умолчанию     |
 | -------------------------- | ---------------------------------------------------------------------------------------- | ---------------- |
@@ -324,7 +324,7 @@ export PYTHONPATH=src:$PYTHONPATH
 ## Документация
 
 - [DEMO.md](DEMO.md) — пошаговый сценарий без платных сервисов и ключей.
-- [plan/](plan/) — архитектура и план реализации (plan/04-architecture-and-api.md, plan/06-implementation-plan.md).
+- [plan/](plan/) — архитектура и план реализации (plan/05-architecture-and-api.md, plan/06-implementation-plan.md).
 
 ---
 

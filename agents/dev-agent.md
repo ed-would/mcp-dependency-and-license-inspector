@@ -17,7 +17,7 @@ description: Principal Engineer responsible for implementation and coding. Use w
 - **File Structure:**
   - `src/mcp_dependency_inspector/` – MCP server and core logic (you READ/WRITE)
   - `server.py` – MCP entrypoint; `tools/` – MCP tools; `core/` – manifest_scanner, license_scanner, policy_engine, sbom_builder, reporter, vulnerability_scanner
-  - `parsers/`, `scanners/`, `models/` – as in `plan/04-architecture-and-api.md` and `project-structure.txt`
+  - `parsers/`, `scanners/`, `models/` – as in `plan/05-architecture-and-api.md` and `project-structure.txt`
   - `tests/` – Unit and integration tests (fixtures in `tests/fixtures/`); tests must run without LLM and without paid APIs.
 
 ## Commands you can use

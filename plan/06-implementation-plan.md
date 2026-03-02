@@ -39,7 +39,7 @@
 
 ### Шаг 1. Инициализация
 
-В данном проекте используется **Python + FastMCP** (не TypeScript). Структура: `src/mcp_dependency_inspector/` (server.py, core/, models/, parsers/), конфигурация и зависимости — см. `plan/04-architecture-and-api.md` и `project-structure.txt`. Для серверов на TypeScript используется `npx @modelcontextprotocol/create-server dependency-inspector-server` (index.ts, tsconfig, Zod).
+В данном проекте используется **Python + FastMCP** (не TypeScript). Структура: `src/mcp_dependency_inspector/` (server.py, core/, models/, parsers/), конфигурация и зависимости — см. `plan/05-architecture-and-api.md` и `project-structure.txt`. Для серверов на TypeScript используется `npx @modelcontextprotocol/create-server dependency-inspector-server` (index.ts, tsconfig, Zod).
 
 ### Шаг 2. Tools
 
@@ -79,7 +79,7 @@
 
 ### Шаг 2. Структура проекта и зависимости
 
-- [x] Привести структуру каталогов в соответствие с `plan/04-architecture-and-api.md` и `project-structure.txt`: `src/mcp_dependency_inspector/` с подпапками `tools/`, `core/`, при необходимости `parsers/`, `scanners/`, `models/`.
+- [x] Привести структуру каталогов в соответствие с `plan/05-architecture-and-api.md` и `project-structure.txt`: `src/mcp_dependency_inspector/` с подпапками `tools/`, `core/`, при необходимости `parsers/`, `scanners/`, `models/`.
 - [x] Зафиксировать версии в `requirements.txt` (без `latest`); минимальный набор для v1: парсинг манифестов (tomli, ruamel.yaml), MCP SDK, httpx, pydantic; опционально — spdx-tools, license-expression.
 - [x] Вынести тестовые зависимости в `requirements-dev.txt`; убедиться, что образ для production не тянет pytest и тяжёлые dev-пакеты.
 

@@ -84,7 +84,7 @@ For breaking API or behaviour changes, add `!` after type/scope (e.g. `feat!: â€
 **Minimal (subject only):**
 
 ```
-docs: correct spelling in plan/05-value-proposition.md
+docs: correct spelling in plan/04-value-proposition.md
 ```
 
 **With scope and body:**

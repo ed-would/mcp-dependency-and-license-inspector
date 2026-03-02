@@ -14,7 +14,7 @@ YAML, ключи верхнего уровня:
 - `block_critical_cve`: boolean (true)
 - `block_high_cve`: boolean (false)
 
-Соответствует формату из `plan/04-architecture-and-api.md` и загрузке через `load_policy()`.
+Соответствует формату из `plan/05-architecture-and-api.md` и загрузке через `load_policy()`.
 
 ---
 

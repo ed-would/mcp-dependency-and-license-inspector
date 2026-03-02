@@ -6,7 +6,7 @@ This part outlines the agents used in our system, each designed for specific pur
 **Orchestration Pattern:** Hierarchical (Manager -> Workers) with Peer Review.
 **Safety:** All code must be sandboxed; no secrets in repo; no direct production database access.
 
-**Project stack:** Python 3.11+, MCP SDK (stdio), Pydantic, manifest parsers (tomli, ruamel.yaml), OSV API (free) or stubs in `DEMO_MODE`; Docker image ≤500 MB, CPU 2.0, RAM 2048 MB. See `plan/06-implementation-plan.md`.
+**Project stack:** Python 3.11+, MCP SDK (stdio), Pydantic, manifest parsers (tomli, ruamel.yaml), OSV API (free) or stubs in `DEMO_MODE`; Docker image ≤500 MB, CPU 2.0, RAM 2048 MB. See `plan/06-implementation-plan.md`. Next steps (docs, demo, presentation, roadmap): `plan/07-next-steps.md`.
 
 **Shared MCP:** The product _is_ this MCP server. Agents use it for cross-ecosystem dependency analysis, vulnerability and license scanning, policy compliance, and SBOM. Base scenario in `DEMO.md` runs without paid services or API keys; tests run without LLM (fixtures and mocks only).
 

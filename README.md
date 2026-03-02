@@ -324,7 +324,7 @@ export PYTHONPATH=src:$PYTHONPATH
 ## Документация
 
 - [DEMO.md](DEMO.md) — пошаговый сценарий без платных сервисов и ключей.
-- [plan/](plan/) — архитектура и план реализации (plan/05-architecture-and-api.md, plan/06-implementation-plan.md).
+- [plan/](plan/) — архитектура и план реализации (plan/05-architecture-and-api.md, plan/06-implementation-plan.md); дальнейшее развитие и материалы для демо/защиты — [plan/07-next-steps.md](plan/07-next-steps.md).
 
 ---
 

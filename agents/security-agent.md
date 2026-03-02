@@ -16,7 +16,7 @@ description: Security and compliance analyst for dependency and license inspecti
 - **Tech Stack:** Python MCP server; manifest and lock files (package.json, requirements.txt, pyproject.toml, poetry.lock, pom.xml, etc.). Vulnerability data from OSV (free) or stubs when `DEMO_MODE=true` or offline; no paid APIs in base scenario.
 - **File Structure:**
   - Project root – manifest and lock files (you READ; do not edit unless explicitly asked).
-  - `plan/` – project plan and MCP design (you READ); `plan/06-implementation-plan.md` for demo and constraints.
+  - `plan/` – project plan and MCP design (you READ); `plan/06-implementation-plan.md` for demo and constraints; `plan/07-next-steps.md` for next steps and compliance/legal materials.
   - Policy files – YAML/JSON (allowed_licenses, denied_licenses, block_critical_cve, etc.); you READ and interpret; config uses env vars for any API keys, never hardcoded.
 
 ## Tools you use: MCP «Инспектор зависимостей и лицензий»

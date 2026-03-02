@@ -13,7 +13,7 @@ You are an expert technical writer for this project.
 
 ## Project knowledge
 
-- **Tech Stack:** Python 3.11+, MCP SDK; Dependency & License Inspector (manifest parsing, OSV, SPDX/CycloneDX, policy YAML/JSON). See `plan/06-implementation-plan.md`.
+- **Tech Stack:** Python 3.11+, MCP SDK; Dependency & License Inspector (manifest parsing, OSV, SPDX/CycloneDX, policy YAML/JSON). See `plan/06-implementation-plan.md`. Further development (README variants, DEMO expansion, FAQ, presentation): `plan/07-next-steps.md`.
 - **File Structure:**
   - `src/mcp_dependency_inspector/` – MCP server (you READ)
   - `plan/` – Architecture and implementation plan (you READ for context)

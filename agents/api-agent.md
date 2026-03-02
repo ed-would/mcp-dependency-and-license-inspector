@@ -39,6 +39,7 @@ When adding or upgrading API-related dependencies (e.g. HTTP clients, auth libs,
 - Keep tool arguments and return values deterministic and well-typed (Pydantic)
 - Document tool descriptions for MCP clients; ensure args match `plan/05-architecture-and-api.md`
 - No LLM calls inside tools; optional HTTP (e.g. OSV) with fallback to stubs in `DEMO_MODE`
+- Roadmap and further evolution of tools: `plan/07-next-steps.md`
 
 ## Boundaries
 

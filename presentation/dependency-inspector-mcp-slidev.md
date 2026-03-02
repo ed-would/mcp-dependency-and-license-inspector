@@ -391,6 +391,13 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
         Исправление ошибок, улучшение UX, обновление планов и документации
       </td>
     </tr>
+    <tr class="border-t border-slate-800">
+      <td class="px-3 py-2 font-semibold">7</td>
+      <td class="px-3 py-2">Следующие шаги развития</td>
+      <td class="px-3 py-2">
+        Резюме продукта, варианты README, расширение DEMO, FAQ, презентация, вопросы жюри, roadmap и позиционирование — <code>plan/07-next-steps.md</code>
+      </td>
+    </tr>
   </tbody>
 </table>
 
@@ -604,10 +611,10 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
     <ul class="space-y-1.5">
       <li class="text-improvement">Больше визуализаций графа зависимостей и рисков</li>
       <li class="text-improvement">Расширение DEMO‑кейсов (монорепы, многомодульные проекты)</li>
-      <li class="text-improvement">Интеграция генерации отчётов для юристов в CI</li>
       <li class="text-improvement">Перенос агентной схемы на другие MCP‑сервера</li>
       <li class="text-improvement">Добавление метрик покрытия (по инструментам и модулям) в отчёты MCP‑сервера</li>
       <li class="text-improvement">Создание короткого отчёта‑summary для руководства на основе детальных результатов</li>
+      <li class="text-improvement">roadmap v2/v3, новые экосистемы (Maven/Gradle), CI/CD, отчёты для юристов/compliance и позиционирование</li>
     </ul>
   </div>
 </div>

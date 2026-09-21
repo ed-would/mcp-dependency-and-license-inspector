@@ -250,7 +250,8 @@ def test_integration_suggest_dependency_replacements_wrapped_list() -> None:
     assert isinstance(result, dict)
     assert "results" in result
     assert len(result["results"]) == 2
-    for alt in r["alternatives"]:
+    for r in result["results"]:
+        for alt in r["alternatives"]:
             assert "name" in alt
             assert "version" in alt
             assert "license" in alt

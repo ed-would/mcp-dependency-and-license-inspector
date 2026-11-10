@@ -186,7 +186,7 @@ def scan_licenses_tool(
     ] = None,
 ) -> dict[str, Any]:
     """License scan for project or explicit package list."""
-    from .models.package import Package, Ecosystem
+    from .models.package import Ecosystem, Package
 
     if project_path:
         _validate_exclude_dirs(exclude_dirs)
@@ -195,14 +195,20 @@ def scan_licenses_tool(
         graph, license_meta = scan_project(str(path), effective_exclude)
         pkg_list = graph.packages
     elif packages:
-        pkg_list = [
-            Package(
-                name=p["name"],
-                version=p.get("version", "*"),
-                ecosystem=Ecosystem(p.get("ecosystem", "unknown")),
+        pkg_list = []
+        for index, package in enumerate(packages):
+            if not isinstance(package, dict):
+                return {"success": False, "error": f"packages[{index}] must be an object."}
+            name = package.get("name")
+            if not isinstance(name, str) or not name.strip():
+                return {"success": False, "error": f"packages[{index}].name is required."}
+            try:
+                ecosystem = Ecosystem(package.get("ecosystem", "unknown"))
+            except ValueError:
+                return {"success": False, "error": f"packages[{index}].ecosystem is unknown."}
+            pkg_list.append(
+                Package(name=name, version=package.get("version", "*"), ecosystem=ecosystem)
             )
-            for p in packages
-        ]
         license_meta = {}
     else:
         return {"success": False, "error": "Either project_path or packages must be provided."}
@@ -262,17 +268,18 @@ def check_policy_compliance(
         effective_policy = str(policy_path).strip()
     else:
         effective_policy = policy
+    if isinstance(effective_policy, str) and not effective_policy.strip():
+        effective_policy = None
     _validate_policy_input(effective_policy)
     path = _resolve_path(project_path)
+    if isinstance(effective_policy, str):
+        effective_policy = str(_resolve_policy_file(effective_policy))
+    policy_cfg = PolicyConfig() if effective_policy is None else load_policy(effective_policy)
+
     effective_exclude = exclude_dirs or settings.exclude_dirs
     graph, license_meta = scan_project(str(path), effective_exclude)
     license_results = scan_licenses(graph.packages, license_meta)
     vuln_report = scan_vulnerabilities(graph.packages)
-
-    if effective_policy is None:
-        policy_cfg: PolicyConfig = PolicyConfig()
-    else:
-        policy_cfg = load_policy(effective_policy)
 
     compliance = evaluate_compliance(graph, license_results, vuln_report, policy_cfg)
     result = {
@@ -402,9 +409,9 @@ def _validate_policy_input(policy: dict[str, Any] | str | None) -> None:
     if policy is None:
         return
     if isinstance(policy, str):
-        if len(policy) > settings.max_policy_payload_bytes:
+        if len(policy) > settings.max_input_path_length:
             raise ValueError(
-                f"Policy path length exceeds limit ({settings.max_policy_payload_bytes})"
+                f"Policy path length exceeds limit ({settings.max_input_path_length})"
             )
         return
     payload = json.dumps(policy)
@@ -424,6 +431,23 @@ def _resolve_path(project_path: str) -> Path:
         raise ValueError(f"Path does not exist: {path}")
     if not path.is_dir():
         raise ValueError(f"Path is not a directory: {path}")
+    _validate_allowed_base_path(path)
+    return path
+
+
+def _resolve_policy_file(policy_path: str) -> Path:
+    try:
+        path = Path(policy_path).expanduser().resolve(strict=True)
+        is_file = path.is_file()
+    except (OSError, RuntimeError, ValueError) as exc:
+        raise ValueError(f"Cannot resolve policy file {policy_path!r}: {exc}") from exc
+    if not is_file:
+        raise ValueError(f"Policy path is not a regular file: {policy_path!r}")
+    _validate_allowed_base_path(path)
+    return path
+
+
+def _validate_allowed_base_path(path: Path) -> None:
     if settings.allowed_base_path:
         base = Path(settings.allowed_base_path).expanduser().resolve()
         if not base.exists() or not base.is_dir():
@@ -434,7 +458,6 @@ def _resolve_path(project_path: str) -> Path:
             raise ValueError(
                 f"Path {path} is not under allowed base directory {base}"
             ) from None
-    return path
 
 
 _STUB_ALTERNATIVES: dict[str, list[dict[str, str]]] = {

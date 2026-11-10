@@ -77,9 +77,9 @@ def test_load_policy_yaml_allowed_licenses(policy_yaml):
     assert "Apache-2.0" in policy.allowed_licenses
 
 
-def test_load_policy_nonexistent_file_returns_defaults(tmp_path):
-    policy = load_policy(str(tmp_path / "nonexistent.yaml"))
-    assert isinstance(policy, PolicyConfig)
+def test_load_policy_nonexistent_file_is_rejected(tmp_path):
+    with pytest.raises(ValueError, match=r"Cannot load policy file .*nonexistent\.yaml"):
+        load_policy(str(tmp_path / "nonexistent.yaml"))
 
 
 # ---------------------------------------------------------------------------

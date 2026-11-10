@@ -1,15 +1,15 @@
 """Policy compliance evaluation."""
 
 import json
-import logging
 from pathlib import Path
+
+from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from ..models.license_model import LicenseCategory, PackageLicense
 from ..models.package import DependencyGraph
 from ..models.policy import ComplianceReport, PolicyConfig, PolicyViolation
 from ..models.vulnerability import Severity, VulnerabilityReport
-
-logger = logging.getLogger(__name__)
 
 
 def load_policy(policy_input: dict | str) -> PolicyConfig:
@@ -18,42 +18,25 @@ def load_policy(policy_input: dict | str) -> PolicyConfig:
         return PolicyConfig(**policy_input)
 
     path = Path(policy_input)
-    if not path.exists():
-        logger.warning("Policy file not found: %s — using defaults", path)
-        return PolicyConfig()
-
     suffix = path.suffix.lower()
     try:
-        if suffix in (".yaml", ".yml"):
-            from ruamel.yaml import YAML
-
-            yaml = YAML(typ="safe")
-            with path.open("r", encoding="utf-8") as fh:
-                data = yaml.load(fh) or {}
-            return PolicyConfig(**data)
-
+        raw = path.read_text(encoding="utf-8")
         if suffix == ".json":
-            with path.open("r", encoding="utf-8") as fh:
-                data = json.load(fh)
-            return PolicyConfig(**data)
-
-        logger.warning("Unrecognised policy file extension %r; trying JSON then YAML", suffix)
-        with path.open("r", encoding="utf-8") as fh:
-            raw = fh.read()
-        try:
-            return PolicyConfig(**json.loads(raw))
-        except json.JSONDecodeError:
-            from ruamel.yaml import YAML
-
-            yaml = YAML(typ="safe")
-            import io
-
-            data = yaml.load(io.StringIO(raw)) or {}
-            return PolicyConfig(**data)
-
-    except Exception as exc:
-        logger.error("Failed to load policy from %s: %s — using defaults", path, exc)
-        return PolicyConfig()
+            data = json.loads(raw)
+        elif suffix in (".yaml", ".yml"):
+            data = YAML(typ="safe").load(raw)
+        else:
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                data = YAML(typ="safe").load(raw)
+        return PolicyConfig.model_validate(data)
+    except OSError as exc:
+        raise ValueError(f"Cannot load policy file {path}: {exc.strerror}") from exc
+    except (ValueError, YAMLError):
+        raise ValueError(
+            f"Cannot load policy file {path}: expected valid YAML or JSON policy settings"
+        ) from None
 
 
 def evaluate_compliance(

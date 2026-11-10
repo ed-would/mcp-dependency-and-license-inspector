@@ -65,6 +65,19 @@ def scan_project(
             logger.debug("Parsing manifest: %s", file_path)
 
             try:
+                file_size = os.path.getsize(file_path)
+            except OSError as exc:
+                logger.warning("Could not read manifest size for %s: %s", file_path, exc)
+                continue
+            if file_size > settings.max_manifest_file_bytes:
+                relative_path = os.path.relpath(file_path, project_path)
+                raise ValueError(
+                    f"Manifest file {relative_path!r} exceeds "
+                    f"MAX_MANIFEST_FILE_BYTES ({file_size} > "
+                    f"{settings.max_manifest_file_bytes} bytes)"
+                )
+
+            try:
                 if has_license_map:
                     result = parser(file_path)
                     if isinstance(result, tuple):

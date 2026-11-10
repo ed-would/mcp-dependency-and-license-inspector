@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from mcp_dependency_inspector import config
 from mcp_dependency_inspector.core.manifest_scanner import scan_project
 from mcp_dependency_inspector.models.package import DependencyGraph
 
@@ -113,3 +114,18 @@ def test_scan_project_default_exclude_dirs_applied(tmp_path):
     graph, _ = scan_project(str(tmp_path))
     names = {p.name for p in graph.packages}
     assert "hidden-pkg" not in names
+
+
+def test_scan_project_rejects_oversized_manifest(tmp_path, monkeypatch):
+    """An oversized recognized manifest fails before its parser runs."""
+    (tmp_path / "requirements.txt").write_text("demo==1", encoding="utf-8")
+    lock_file = tmp_path / "package-lock.json"
+    lock_file.write_text("{" + " " * 16 + "}", encoding="utf-8")
+    monkeypatch.setattr(config.settings, "max_manifest_file_bytes", 8)
+
+    with pytest.raises(ValueError, match=r"package-lock\.json.*MAX_MANIFEST_FILE_BYTES"):
+        scan_project(str(tmp_path))
+
+    lock_file.unlink()
+    graph, _ = scan_project(str(tmp_path))
+    assert {package.name for package in graph.packages} == {"demo"}

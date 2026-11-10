@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from mcp_dependency_inspector import server
 from mcp_dependency_inspector.server import (
     analyze_project_dependencies,
     check_policy_compliance,
@@ -18,7 +19,6 @@ from mcp_dependency_inspector.server import (
     scan_vulnerabilities_tool,
     suggest_dependency_replacements,
 )
-
 
 # ---------------------------------------------------------------------------
 # analyze_project_dependencies
@@ -110,13 +110,34 @@ def test_integration_scan_licenses_tool_packages_list() -> None:
     result = scan_licenses_tool(
         packages=[
             {"name": "lodash", "version": "4.17.21", "ecosystem": "npm"},
-            {"name": "requests", "version": "2.27.0", "ecosystem": "pypi"},
+            {"name": "requests", "version": "2.27.0"},
         ]
     )
     assert isinstance(result, dict)
     assert "error" not in result
     assert result["total_packages"] == 2
     assert len(result["licenses"]) == 2
+    assert result["licenses"][1]["ecosystem"] == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("package", "error_path"),
+    [
+        (None, "packages[1]"),
+        ({}, "packages[1].name"),
+        ({"name": " "}, "packages[1].name"),
+        ({"name": None}, "packages[1].name"),
+        ({"name": "dep", "ecosystem": "typo"}, "packages[1].ecosystem"),
+    ],
+)
+def test_integration_scan_licenses_rejects_invalid_package(
+    package: dict[str, str | None] | None, error_path: str
+) -> None:
+    result = scan_licenses_tool(packages=[{"name": "valid", "ecosystem": "npm"}, package])
+
+    assert result["success"] is False
+    assert error_path in result["error"]
+    assert "licenses" not in result
 
 
 def test_integration_scan_licenses_tool_error_when_no_input() -> None:
@@ -152,9 +173,12 @@ def test_integration_check_policy_compliance(fixtures_dir: Path, policy_yaml: Pa
         assert "details" in v
 
 
-def test_integration_check_policy_compliance_default_policy(fixtures_dir: Path) -> None:
-    """check_policy_compliance with no policy uses default config."""
-    result = check_policy_compliance(str(fixtures_dir))
+@pytest.mark.parametrize("policy", [None, ""])
+def test_integration_check_policy_compliance_default_policy(
+    fixtures_dir: Path, policy: str | None
+) -> None:
+    """Missing and blank policy inputs both use the default config."""
+    result = check_policy_compliance(str(fixtures_dir), policy=policy)
     assert "compliant" in result
     assert "violations" in result
 
@@ -167,6 +191,34 @@ def test_integration_check_policy_compliance_policy_dict(fixtures_dir: Path) -> 
     )
     assert "compliant" in result
     assert "violations" in result
+
+
+@pytest.mark.parametrize(
+    ("argument", "filename", "message"),
+    [
+        ("policy_path", "link.json", "not under allowed base directory"),
+        ("policy", "missing.json", "Cannot resolve policy file"),
+        ("policy_path", "broken.json", "Cannot load policy file"),
+    ],
+)
+def test_integration_check_rejects_bad_policy_before_scanning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, argument: str, filename: str, message: str
+) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    outside_policy = tmp_path / "outside.json"
+    outside_policy.write_text("{}", encoding="utf-8")
+    (project / "link.json").symlink_to(outside_policy)
+    (project / "broken.json").write_text("{", encoding="utf-8")
+    monkeypatch.setattr(server.settings, "allowed_base_path", str(project))
+
+    def unexpected_scan(*args: object, **kwargs: object) -> None:
+        pytest.fail("Project scan started before the policy was validated")
+
+    monkeypatch.setattr(server, "scan_project", unexpected_scan)
+
+    with pytest.raises(ValueError, match=message):
+        check_policy_compliance(str(project), **{argument: str(project / filename)})
 
 
 # ---------------------------------------------------------------------------

@@ -94,8 +94,14 @@ def format_license_report(licenses: list[PackageLicense]) -> str:
 def format_vulnerability_report(report: VulnerabilityReport) -> str:
     """Return a Markdown vulnerability report with summary counts and a CVE table."""
     lines = ["## Vulnerability Report", ""]
+    if report.status == "unavailable":
+        lines.extend(["**Status:** INCOMPLETE", "OSV was unavailable or returned incomplete data.", ""])
+        return "\n".join(lines)
+
     lines.append(f"**Packages scanned:** {report.packages_scanned}")
     lines.append(f"**Vulnerabilities found:** {len(report.vulnerabilities)}")
+    if report.status == "demo":
+        lines.append("**Status:** DEMO. Results use fixture vulnerability data.")
     lines.append("")
 
     if report.counts_by_severity:
@@ -142,14 +148,25 @@ def format_compliance_report(report: ComplianceReport) -> str:
     """Return a Markdown compliance report with overall status and violation details."""
     lines = ["## Compliance Report", ""]
 
-    status_icon = "✅ COMPLIANT" if report.compliant else "❌ NON-COMPLIANT"
+    incomplete = report.vulnerability_scan_status == "unavailable"
+    if incomplete:
+        status_icon = "⚠️ INCOMPLETE"
+    else:
+        status_icon = "✅ COMPLIANT" if report.compliant else "❌ NON-COMPLIANT"
     lines.append(f"**Status:** {status_icon}")
     lines.append(f"**Packages checked:** {report.packages_checked}")
     lines.append(f"**Violations found:** {len(report.violations)}")
+    if incomplete:
+        lines.append("**Vulnerability scan:** OSV was unavailable or returned incomplete data.")
+    elif report.vulnerability_scan_status == "demo":
+        lines.append("**Vulnerability scan:** DEMO. Results use fixture vulnerability data.")
     lines.append("")
 
     if not report.violations:
-        lines.append("No policy violations detected.")
+        if incomplete:
+            lines.append("No license policy violations detected.")
+        else:
+            lines.append("No policy violations detected.")
         lines.append("")
         return "\n".join(lines)
 

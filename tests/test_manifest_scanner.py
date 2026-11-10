@@ -129,3 +129,35 @@ def test_scan_project_rejects_oversized_manifest(tmp_path, monkeypatch):
     lock_file.unlink()
     graph, _ = scan_project(str(tmp_path))
     assert {package.name for package in graph.packages} == {"demo"}
+
+
+def test_scan_project_rejects_manifest_symlink_outside_allowed_base(tmp_path, monkeypatch):
+    """A recognized manifest must not escape ALLOWED_BASE_PATH through a symlink."""
+    allowed = tmp_path / "allowed"
+    outside = tmp_path / "outside"
+    allowed.mkdir()
+    outside.mkdir()
+    (outside / "requirements.txt").write_text("outside-pkg==1\n", encoding="utf-8")
+    (allowed / "requirements.txt").symlink_to(outside / "requirements.txt")
+    monkeypatch.setattr(config.settings, "allowed_base_path", str(allowed))
+
+    with pytest.raises(ValueError, match=r"requirements\.txt.*outside.*allowed base") as error:
+        scan_project(str(allowed))
+    assert str(allowed.resolve()) not in str(error.value)
+
+
+def test_scan_project_allows_manifest_symlink_inside_allowed_base(tmp_path, monkeypatch):
+    """A recognized manifest may point to another regular file inside the base."""
+    allowed = tmp_path / "allowed"
+    real_manifests = allowed / "manifests"
+    real_manifests.mkdir(parents=True)
+    target = real_manifests / "shared.txt"
+    target.write_text(
+        "inside-pkg==1\n", encoding="utf-8"
+    )
+    (allowed / "requirements.txt").symlink_to(target)
+    monkeypatch.setattr(config.settings, "allowed_base_path", str(allowed))
+
+    graph, _ = scan_project(str(allowed))
+
+    assert {package.name for package in graph.packages} == {"inside-pkg"}

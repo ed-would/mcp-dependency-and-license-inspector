@@ -5,14 +5,15 @@ Security: no shell or subprocess execution; path and payload size limits;
 optional allowed_base_path; per-tool timeout.
 """
 
-import inspect
 import json
 import logging
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from pathlib import Path
-from typing import Annotated, Any
+from threading import BoundedSemaphore
+from typing import Annotated, Any, ParamSpec, TypeVar
 
 from fastmcp import FastMCP
 from starlette.requests import Request
@@ -70,28 +71,50 @@ async def health(_request: Request) -> Response:
 
 # Session state for MCP resources: last report and SBOM from the most recent tool run.
 _last_report: dict[str, Any] | None = None
-_last_sbom_spdx: dict[str, Any] | None = None
-_last_sbom_cyclonedx: dict[str, Any] | None = None
-_last_sbom_project_name: str = ""
+_last_sboms: dict[str, dict[str, Any]] = {}
+
+_TOOL_WORKERS = 4
+_tool_executor = ThreadPoolExecutor(max_workers=_TOOL_WORKERS, thread_name_prefix="mcp-tool")
+_tool_slots = BoundedSemaphore(_TOOL_WORKERS)
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
 
 
-def _with_timeout(f: Any) -> Any:
-    """Run sync tool in a thread with configurable timeout. No shell/subprocess used."""
+def _run_with_timeout(
+    function: Callable[_P, _R], /, *args: _P.args, **kwargs: _P.kwargs
+) -> _R:
+    timeout = settings.tool_timeout_seconds
+    if timeout <= 0:
+        return function(*args, **kwargs)
 
-    @wraps(f)
-    def wrapped(*args: Any, **kwargs: Any) -> Any:
-        if settings.tool_timeout_seconds <= 0:
-            return f(*args, **kwargs)
-        with ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(f, *args, **kwargs)
-            try:
-                return fut.result(timeout=settings.tool_timeout_seconds)
-            except TimeoutError:
-                raise ValueError(
-                    f"Tool execution timed out after {settings.tool_timeout_seconds}s"
-                ) from None
+    slots = _tool_slots
+    if not slots.acquire(blocking=False):
+        raise ValueError("All tool workers are busy. Try again when a scan has finished.")
 
-    wrapped.__signature__ = inspect.signature(f)
+    def run() -> _R:
+        try:
+            return function(*args, **kwargs)
+        finally:
+            # A running thread may outlive the response. Keep its slot until it stops.
+            slots.release()
+
+    try:
+        future = _tool_executor.submit(run)
+    except BaseException:
+        slots.release()
+        raise
+    if not wait((future,), timeout=timeout).done:
+        if future.cancel():
+            slots.release()
+        raise ValueError(f"Tool execution timed out after {timeout}s")
+    return future.result()
+
+
+def _with_timeout(function: Callable[_P, _R]) -> Callable[_P, _R]:
+    @wraps(function)
+    def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        return _run_with_timeout(function, *args, **kwargs)
+
     return wrapped
 
 
@@ -133,8 +156,8 @@ def analyze_project_dependencies(
     name="scan_vulnerabilities",
     description=(
         "Scan project dependencies for known vulnerabilities using the OSV database. "
-        "Returns CVEs with severity and recommended fix versions. "
-        "In DEMO_MODE or when offline, returns stub data."
+        "Returns vulnerability IDs and any available severity and fix metadata. "
+        "DEMO_MODE uses sample data. If OSV fails, vulnerability_scan_status is unavailable."
     )
 )
 @_with_timeout
@@ -156,7 +179,8 @@ def scan_vulnerabilities_tool(
         "counts_by_severity": report.counts_by_severity,
         "packages_scanned": report.packages_scanned,
         "vulnerabilities": [v.model_dump() for v in report.vulnerabilities],
-        "demo_mode": settings.demo_mode,
+        "demo_mode": report.status == "demo",
+        "vulnerability_scan_status": report.status,
     }
 
 
@@ -241,10 +265,10 @@ def scan_licenses_tool(
         "Evaluate the project against a license and CVE policy. "
         "Use policy_path for a file path (e.g. demo_project/policy_strict.yaml) — plain text, no quotes. "
         "Or use policy: dict or JSON string path. "
-        "Returns compliant (bool), violations list."
+        "Returns compliant, violations and vulnerability_scan_status. "
+        "An unavailable vulnerability check prevents a compliant result."
     )
 )
-@_with_timeout
 def check_policy_compliance(
     project_path: Annotated[str, "Path to the project root directory to evaluate."],
     policy_path: Annotated[
@@ -261,6 +285,18 @@ def check_policy_compliance(
     ] = None,
 ) -> dict[str, Any]:
     """Full compliance check: scan + license check + policy evaluation."""
+    path, result = _run_with_timeout(_check_policy, project_path, policy_path, policy, exclude_dirs)
+    global _last_report
+    _last_report = {"project_path": str(path), **result}
+    return result
+
+
+def _check_policy(
+    project_path: str,
+    policy_path: str | None,
+    policy: dict[str, Any] | str | None,
+    exclude_dirs: list[str] | None,
+) -> tuple[Path, dict[str, Any]]:
     _validate_exclude_dirs(exclude_dirs)
     # Prefer policy_path (plain string, no JSON quotes) for convenience in Inspector
     effective_policy: dict[str, Any] | str | None = None
@@ -282,24 +318,15 @@ def check_policy_compliance(
     vuln_report = scan_vulnerabilities(graph.packages)
 
     compliance = evaluate_compliance(graph, license_results, vuln_report, policy_cfg)
-    result = {
+    return path, {
         "summary": format_compliance_report(compliance),
         "compliant": compliance.compliant,
         "packages_checked": compliance.packages_checked,
         "violations_count": len(compliance.violations),
         "violations": [v.model_dump() for v in compliance.violations],
-        "demo_mode": settings.demo_mode,
+        "demo_mode": vuln_report.status == "demo",
+        "vulnerability_scan_status": vuln_report.status,
     }
-    global _last_report
-    _last_report = {
-        "project_path": str(path),
-        "summary": result["summary"],
-        "compliant": compliance.compliant,
-        "packages_checked": compliance.packages_checked,
-        "violations_count": len(compliance.violations),
-        "violations": [v.model_dump() for v in compliance.violations],
-    }
-    return result
 
 
 # ── Tool 5 ───────────────────────────────────────────────────────────────────
@@ -312,7 +339,6 @@ def check_policy_compliance(
         "Returns JSON object with sbom field."
     )
 )
-@_with_timeout
 def generate_sbom(
     project_path: Annotated[str, "Path to the project root directory."],
     format: Annotated[
@@ -327,6 +353,14 @@ def generate_sbom(
     """Generate SBOM. format must be 'spdx' or 'cyclonedx'."""
     if format not in ("spdx", "cyclonedx"):
         return {"success": False, "error": f"Unknown format '{format}'. Use 'spdx' or 'cyclonedx'."}
+    project_name, result = _run_with_timeout(_build_project_sbom, project_path, format, exclude_dirs)
+    _last_sboms[format] = {"project_name": project_name, "sbom": result["sbom"]}
+    return result
+
+
+def _build_project_sbom(
+    project_path: str, format: str, exclude_dirs: list[str] | None
+) -> tuple[str, dict[str, Any]]:
     _validate_exclude_dirs(exclude_dirs)
     path = _resolve_path(project_path)
     effective_exclude = exclude_dirs or settings.exclude_dirs
@@ -338,14 +372,7 @@ def generate_sbom(
     else:
         sbom = generate_cyclonedx(graph, project_name)
 
-    global _last_sbom_spdx, _last_sbom_cyclonedx, _last_sbom_project_name
-    _last_sbom_project_name = project_name
-    if format == "spdx":
-        _last_sbom_spdx = sbom
-    else:
-        _last_sbom_cyclonedx = sbom
-
-    return {
+    return project_name, {
         "format": format,
         "package_count": len(graph.packages),
         "sbom": sbom,
@@ -560,13 +587,12 @@ def resource_report_latest() -> str:
 )
 def resource_sbom_latest_spdx() -> str:
     """Return the most recent SPDX SBOM from this session (JSON string)."""
-    if _last_sbom_spdx is None:
+    payload = _last_sboms.get("spdx")
+    if payload is None:
         payload = {
             "message": "No SPDX SBOM yet. Call generate_sbom(project_path, format='spdx') first.",
             "sbom": None,
         }
-    else:
-        payload = {"project_name": _last_sbom_project_name, "sbom": _last_sbom_spdx}
     return json.dumps(payload, ensure_ascii=False)
 
 
@@ -577,13 +603,12 @@ def resource_sbom_latest_spdx() -> str:
 )
 def resource_sbom_latest_cyclonedx() -> str:
     """Return the most recent CycloneDX SBOM from this session (JSON string)."""
-    if _last_sbom_cyclonedx is None:
+    payload = _last_sboms.get("cyclonedx")
+    if payload is None:
         payload = {
             "message": "No CycloneDX SBOM yet. Call generate_sbom(project_path, format='cyclonedx') first.",
             "sbom": None,
         }
-    else:
-        payload = {"project_name": _last_sbom_project_name, "sbom": _last_sbom_cyclonedx}
     return json.dumps(payload, ensure_ascii=False)
 
 

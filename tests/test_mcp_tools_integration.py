@@ -6,11 +6,17 @@ types) is asserted. No LLM or paid APIs are used.
 
 from __future__ import annotations
 
+import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import BoundedSemaphore, Event
+from typing import Never
 
 import pytest
 
 from mcp_dependency_inspector import server
+from mcp_dependency_inspector.core import vulnerability_scanner
+from mcp_dependency_inspector.models.package import DependencyGraph, Package
 from mcp_dependency_inspector.server import (
     analyze_project_dependencies,
     check_policy_compliance,
@@ -193,6 +199,31 @@ def test_integration_check_policy_compliance_policy_dict(fixtures_dir: Path) -> 
     assert "violations" in result
 
 
+def test_integration_osv_failure_leaves_audit_incomplete(
+    fixtures_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unavailable(_packages: list[Package]) -> Never:
+        raise OSError("test OSV failure")
+
+    monkeypatch.setattr(server.settings, "demo_mode", False)
+    monkeypatch.setattr(vulnerability_scanner, "_query_osv_batch", unavailable)
+    monkeypatch.setattr(server, "_last_report", None)
+
+    scan = scan_vulnerabilities_tool(str(fixtures_dir))
+    audit = check_policy_compliance(str(fixtures_dir))
+    resource = json.loads(server.resource_report_latest())
+
+    assert scan["vulnerability_scan_status"] == "unavailable"
+    assert scan["demo_mode"] is False
+    assert scan["vulnerabilities"] == []
+    assert scan["packages_scanned"] == 0
+    for report in (audit, resource):
+        assert report["vulnerability_scan_status"] == "unavailable"
+        assert report["compliant"] is False
+        assert report["violations"] == []
+        assert "INCOMPLETE" in report["summary"].upper()
+
+
 @pytest.mark.parametrize(
     ("argument", "filename", "message"),
     [
@@ -219,6 +250,59 @@ def test_integration_check_rejects_bad_policy_before_scanning(
 
     with pytest.raises(ValueError, match=message):
         check_policy_compliance(str(project), **{argument: str(project / filename)})
+
+
+@pytest.mark.parametrize(
+    ("tool_name", "resource_name"),
+    [
+        ("check_policy_compliance", "resource_report_latest"),
+        ("generate_sbom", "resource_sbom_latest_spdx"),
+    ],
+)
+def test_timeout_returns_while_worker_is_busy_and_preserves_latest(
+    fixtures_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tool_name: str,
+    resource_name: str,
+) -> None:
+    call = getattr(server, tool_name)
+    latest = getattr(server, resource_name)
+    slow_project = tmp_path / "slow"
+    slow_project.mkdir()
+    started, release, finished = Event(), Event(), Event()
+    scan = server.scan_project
+
+    def controlled_scan(
+        project_path: str, exclude_dirs: list[str] | None
+    ) -> tuple[DependencyGraph, dict[str, str]]:
+        if Path(project_path) == slow_project.resolve():
+            started.set()
+            release.wait(timeout=5)
+            finished.set()
+        return scan(project_path, exclude_dirs)
+
+    monkeypatch.setattr(server, "scan_project", controlled_scan)
+    monkeypatch.setattr(server, "_last_report", None)
+    monkeypatch.setattr(server, "_last_sboms", {})
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        monkeypatch.setattr(server, "_tool_executor", executor)
+        monkeypatch.setattr(server, "_tool_slots", BoundedSemaphore(1))
+        call(str(fixtures_dir))
+        previous = latest()
+        monkeypatch.setattr(server.settings, "tool_timeout_seconds", 0.2)
+        try:
+            with pytest.raises(ValueError, match="timed out"):
+                call(str(slow_project))
+            assert started.is_set() and not finished.is_set()
+            with pytest.raises(ValueError, match="workers are busy"):
+                call(str(fixtures_dir))
+        finally:
+            release.set()
+        executor.submit(lambda: None).result(timeout=5)
+        assert latest() == previous
+        monkeypatch.setattr(server.settings, "tool_timeout_seconds", 5)
+        call(str(fixtures_dir))
 
 
 # ---------------------------------------------------------------------------

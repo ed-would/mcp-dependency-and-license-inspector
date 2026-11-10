@@ -53,10 +53,10 @@ const activePersona = computed(
 
 const toolImpact = [
   { name: 'analyze_project_dependencies', label: 'Граф зависимостей', value: 90 },
-  { name: 'scan_vulnerabilities_tool', label: 'Скан уязвимостей', value: 85 },
-  { name: 'scan_licenses_tool', label: 'Скан лицензий', value: 80 },
+  { name: 'scan_vulnerabilities', label: 'Скан уязвимостей', value: 85 },
+  { name: 'scan_licenses', label: 'Скан лицензий', value: 80 },
   { name: 'check_policy_compliance', label: 'Проверка политики', value: 75 },
-  { name: 'generate_sbom_spdx / cyclonedx', label: 'SBOM', value: 70 },
+  { name: 'generate_sbom', label: 'SBOM (SPDX / CycloneDX)', value: 70 },
   { name: 'suggest_dependency_replacements', label: 'Рекомендации по заменам', value: 65 },
 ]
 </script>
@@ -229,10 +229,10 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
 
 <div class="grid grid-cols-2 gap-8 -mt-2 text-xs leading-relaxed">
   <div>
-    <h3 class="text-base font-bold mb-1 text-emerald-300">6 инструментов:</h3>
+    <h3 class="text-base font-bold mb-1 text-emerald-300">6 компонентов ядра</h3>
     <ul class="space-y-1">
       <li><strong class="text-improvement">manifest_scanner</strong> — находит манифесты и строит список пакетов</li>
-      <li><strong class="text-improvement">sbom_builder</strong> — строит граф зависимостей и экспортирует SBOM</li>
+      <li><strong class="text-improvement">sbom_builder</strong> — экспортирует найденные компоненты в SBOM</li>
       <li><strong class="text-improvement">vulnerability_scanner</strong> — агрегирует уязвимости из OSV или стабов</li>
       <li><strong class="text-improvement">license_scanner</strong> — собирает лицензии и помечает рисковые</li>
       <li><strong class="text-improvement">policy_engine</strong> — сравнивает результаты с политикой компании</li>
@@ -449,7 +449,7 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
 <ul class="text-[11px] leading-relaxed space-y-1">
   <li><strong>Детерминизм ядра.</strong> Только детерминированные сканеры и политика; LLM — только снаружи, внешние сервисы (OSV) всегда имеют стабы в <code>DEMO_MODE=true</code></li>
   <li><strong>Фиксированный набор tools.</strong> 6 основных инструментов и ресурсы из <code>plan/05-architecture-and-api.md</code>, единые контракты ввода/вывода</li>
-  <li><strong>Архитектура и Docker‑контракт.</strong> Структура <code>src/mcp_dependency_inspector/</code>, команды <code>serve</code>/<code>smoke</code>, образ &le; 500&nbsp;МБ и лимиты CPU 2.0 / RAM 2048 MB</li>
+  <li><strong>Архитектура и Docker‑контракт.</strong> Структура <code>src/mcp_dependency_inspector/</code>, команды <code>serve</code>/<code>smoke</code>, целевой размер образа &le; 500&nbsp;МБ и рекомендуемые лимиты CPU 2.0 / RAM 2048 MB</li>
   <li><strong>Безопасность и лицензии.</strong> Запрет секретов в репо, <code>.env.example</code>, формальная политика лицензий + tool <code>check_policy_compliance</code></li>
   <li><strong>Тестируемость и DEMO.</strong> Покрытие ключевых сценариев фикстурами и smoke‑тестами так, чтобы <code>DEMO.md</code> выполнялся целиком без платных сервисов</li>
 </ul>
@@ -465,7 +465,7 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
     <div>
       <p class="text-base font-bold mt-0 mb-1.5 text-emerald-300" style="margin-top: 0;">Ядро и стек:</p>
       <ul class="space-y-1 mt-0">
-        <li>Python 3.11+, <code>mcp</code>-SDK (stdio‑протокол)</li>
+        <li>Python 3.11+, FastMCP (stdio и Streamable HTTP)</li>
         <li>Pydantic для валидации схем и контрактов tools/resources</li>
         <li><code>tomli</code>, <code>ruamel.yaml</code> для разбора манифестов и политик</li>
         <li><code>httpx</code> для обращения к OSV с заглушками в <code>DEMO_MODE=true</code></li>
@@ -474,8 +474,8 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
     <div>
       <p class="text-base font-bold mt-0 mb-1.5 text-emerald-300" style="margin-top: 0;">Инфраструктура и качество:</p>
       <ul class="space-y-1">
-        <li>Docker + многостадийный <code>Dockerfile</code> (образ &le; 500&nbsp;MB, команды <code>serve</code>/<code>smoke</code>)</li>
-        <li>pytest, фикстуры в <code>tests/fixtures/</code>, smoke‑прогоны через MCP Inspector</li>
+        <li>Docker + многостадийный <code>Dockerfile</code> (целевой размер образа &le; 500&nbsp;МБ, команды <code>serve</code>/<code>smoke</code>)</li>
+        <li>pytest, фикстуры в <code>tests/fixtures/</code>, Docker smoke и демо через MCP Inspector</li>
         <li>ruff, mypy, <code>.cursorrules</code> для стиля, типов и детерминизма</li>
         <li>Планирование через файлы <code>plan/01–06</code> и README/DEMO для воспроизводимости</li>
       </ul>
@@ -563,10 +563,9 @@ Reporter --> Outputs["Отчёты и ресурсы MCP"]
   <strong>Сводка по проверкам и тестам:</strong>
 </p>
 <ul class="text-[11px] leading-relaxed space-y-0.5">
-  <li><strong>8 файлов тестов</strong> и <strong>136 pytest‑кейсов</strong> в сумме</li>
-  <li><strong>120 юнит‑тестов</strong> для сканеров манифестов, уязвимостей, лицензий, <code>policy_engine</code>, <code>sbom_builder</code>, <code>reporter</code></li>
-  <li><strong>16 интеграционных тестов</strong> для связки MCP‑tools и типичного DEMO‑пути</li>
-  <li>Smoke‑путь: <code>docker run IMAGE smoke</code> + запуск <code>serve</code>, отдельный прогон сценария из <code>DEMO.md</code> через MCP Inspector</li>
+  <li><strong>Юнит‑тесты</strong> для парсеров, сканеров, политики и экспорта SBOM</li>
+  <li><strong>Интеграционные тесты</strong> для вызовов инструментов и формата ответов</li>
+  <li><code>smoke</code> проверяет <code>/health</code>, а сценарий из <code>DEMO.md</code> проверяет вызовы через MCP Inspector</li>
   <li>
     Ошибки вида
     <span class="text-error">

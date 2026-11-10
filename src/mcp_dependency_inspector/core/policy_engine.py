@@ -153,7 +153,9 @@ def evaluate_compliance(
                 )
 
     return ComplianceReport(
-        compliant=len(violations) == 0,
+        compliant=len(violations) == 0
+        and (vuln_report is None or vuln_report.status != "unavailable"),
         violations=violations,
         packages_checked=packages_checked,
+        vulnerability_scan_status=vuln_report.status if vuln_report else None,
     )

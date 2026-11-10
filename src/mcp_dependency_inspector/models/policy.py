@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from .vulnerability import VulnerabilityScanStatus
+
 
 class PolicyConfig(BaseModel):
     allowed_licenses: list[str] = []
@@ -21,3 +23,4 @@ class ComplianceReport(BaseModel):
     compliant: bool
     violations: list[PolicyViolation]
     packages_checked: int
+    vulnerability_scan_status: VulnerabilityScanStatus | None = None

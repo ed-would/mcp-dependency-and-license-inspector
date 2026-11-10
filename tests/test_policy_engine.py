@@ -100,6 +100,42 @@ def test_evaluate_compliance_clean():
     report = evaluate_compliance(graph, pkg_licenses, _empty_vuln_report(2), policy)
     assert report.compliant is True
     assert report.violations == []
+    assert report.vulnerability_scan_status == "ok"
+
+
+def test_evaluate_compliance_unavailable_vulnerability_scan_fails_closed():
+    """An unavailable OSV result is non-compliant even without known findings."""
+    pkg = _make_package("safe-pkg")
+    graph = _make_graph([pkg])
+    pkg_licenses = [_make_package_license(pkg, "MIT")]
+    policy = load_policy({})
+    vuln_report = VulnerabilityReport(
+        vulnerabilities=[],
+        counts_by_severity={s.value: 0 for s in Severity},
+        packages_scanned=0,
+        status="unavailable",
+    )
+
+    report = evaluate_compliance(graph, pkg_licenses, vuln_report, policy)
+
+    assert report.compliant is False
+    assert report.violations == []
+    assert report.vulnerability_scan_status == "unavailable"
+
+
+def test_evaluate_compliance_unavailable_scan_preserves_license_violations():
+    pkg = _make_package("gpl-lib")
+    graph = _make_graph([pkg])
+    pkg_licenses = [_make_package_license(pkg, "GPL-3.0")]
+    policy = load_policy({"denied_licenses": ["GPL-3.0"]})
+    vuln_report = _empty_vuln_report(0)
+    vuln_report.status = "unavailable"
+
+    report = evaluate_compliance(graph, pkg_licenses, vuln_report, policy)
+
+    assert report.compliant is False
+    assert any(v.type == "license" for v in report.violations)
+    assert report.vulnerability_scan_status == "unavailable"
 
 
 def test_evaluate_compliance_denied_license():

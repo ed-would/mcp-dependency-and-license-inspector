@@ -22,12 +22,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # Access and resource limits (MCP security)
-    allowed_base_path: str | None = None  # Project and policy paths must be under it if set
+    allowed_base_path: str | None = None  # Root for projects, policy files and manifests
     max_input_path_length: int = 4096
     max_exclude_dirs: int = 100
     max_policy_payload_bytes: int = 512 * 1024  # 512 KiB for an inline policy dict
     max_manifest_file_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
-    tool_timeout_seconds: float = 120.0  # Per-tool execution timeout; 0 = disabled
+    tool_timeout_seconds: float = 120.0  # Tool response deadline; 0 = disabled
 
     model_config = SettingsConfigDict(
         env_file=".env",

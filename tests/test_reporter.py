@@ -191,6 +191,19 @@ def test_format_vulnerability_report_empty():
     assert "No vulnerabilities found" in result
 
 
+def test_format_vulnerability_report_unavailable_is_explicitly_incomplete():
+    report = VulnerabilityReport(
+        vulnerabilities=[],
+        counts_by_severity={s.value: 0 for s in Severity},
+        packages_scanned=0,
+        status="unavailable",
+    )
+    result = format_vulnerability_report(report)
+    assert "INCOMPLETE" in result
+    assert "No vulnerabilities found" not in result
+    assert "OSV was unavailable" in result
+
+
 def test_format_vulnerability_report_shows_cve_id():
     vuln = _make_vuln(vuln_id="CVE-2024-12345")
     report = VulnerabilityReport(
@@ -258,6 +271,19 @@ def test_format_compliance_report_no_violations_message():
     report = ComplianceReport(compliant=True, violations=[], packages_checked=5)
     result = format_compliance_report(report)
     assert "No policy violations" in result or "compliant" in result.lower()
+
+
+def test_format_compliance_report_unavailable_scan_is_not_clean():
+    report = ComplianceReport(
+        compliant=False,
+        violations=[],
+        packages_checked=5,
+        vulnerability_scan_status="unavailable",
+    )
+    result = format_compliance_report(report)
+    assert "INCOMPLETE" in result
+    assert "No license policy violations detected" in result
+    assert "NON-COMPLIANT" not in result
 
 
 def test_format_compliance_report_cve_violation():

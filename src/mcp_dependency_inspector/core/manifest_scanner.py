@@ -3,6 +3,8 @@
 import logging
 import os
 from collections import Counter
+from pathlib import Path
+from stat import S_ISREG
 from typing import Callable
 
 from ..config import settings
@@ -43,6 +45,11 @@ def scan_project(
     Deduplicates packages by (name, version, ecosystem).
     """
     excluded: set[str] = set(exclude_dirs if exclude_dirs is not None else settings.exclude_dirs)
+    allowed_base = (
+        Path(settings.allowed_base_path).expanduser().resolve()
+        if settings.allowed_base_path
+        else None
+    )
 
     all_packages: dict[tuple[str, str, str], Package] = {}
     all_license_metadata: dict[str, str] = {}
@@ -64,13 +71,27 @@ def scan_project(
 
             logger.debug("Parsing manifest: %s", file_path)
 
+            relative_path = os.path.relpath(file_path, project_path)
             try:
-                file_size = os.path.getsize(file_path)
+                resolved_path = Path(file_path).resolve(strict=True)
+            except (OSError, RuntimeError) as exc:
+                logger.warning("Could not resolve manifest %s: %s", file_path, exc)
+                continue
+
+            if allowed_base is not None and not resolved_path.is_relative_to(allowed_base):
+                raise ValueError(
+                    f"Manifest file {relative_path!r} resolves outside the configured allowed base path"
+                )
+
+            try:
+                file_stat = resolved_path.stat()
             except OSError as exc:
                 logger.warning("Could not read manifest size for %s: %s", file_path, exc)
                 continue
+            if not S_ISREG(file_stat.st_mode):
+                raise ValueError(f"Manifest file {relative_path!r} is not a regular file")
+            file_size = file_stat.st_size
             if file_size > settings.max_manifest_file_bytes:
-                relative_path = os.path.relpath(file_path, project_path)
                 raise ValueError(
                     f"Manifest file {relative_path!r} exceeds "
                     f"MAX_MANIFEST_FILE_BYTES ({file_size} > "
@@ -79,7 +100,7 @@ def scan_project(
 
             try:
                 if has_license_map:
-                    result = parser(file_path)
+                    result = parser(str(resolved_path))
                     if isinstance(result, tuple):
                         pkgs, lic_map = result
                     else:
@@ -87,7 +108,7 @@ def scan_project(
                         lic_map = {}
                     all_license_metadata.update(lic_map)
                 else:
-                    raw = parser(file_path)
+                    raw = parser(str(resolved_path))
                     pkgs = raw if isinstance(raw, list) else []
             except Exception as exc:
                 logger.warning("Unexpected error parsing %s: %s", file_path, exc)

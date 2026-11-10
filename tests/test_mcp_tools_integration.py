@@ -1,7 +1,6 @@
 """Integration tests: MCP tools called with test project path (fixtures_dir).
 
-All tests use DEMO_MODE=true (conftest) so no real HTTP. Response format (JSON keys,
-types) is asserted. No LLM or paid APIs are used.
+Tests use demo mode by default and stub OSV when exercising live mode.
 """
 
 from __future__ import annotations
@@ -58,6 +57,17 @@ def test_integration_analyze_project_dependencies_has_npm_or_pypi(fixtures_dir: 
     result = analyze_project_dependencies(str(fixtures_dir))
     ecosystems = set(result["ecosystem_counts"].keys())
     assert "npm" in ecosystems or "pypi" in ecosystems
+
+
+def test_integration_exclude_dirs_limit(fixtures_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(server.settings, "max_exclude_dirs", 2)
+    exclude_dirs = ["absent-one", "absent-two"]
+
+    result = analyze_project_dependencies(str(fixtures_dir), exclude_dirs=exclude_dirs)
+    assert result["total_packages"] > 0
+
+    with pytest.raises(ValueError, match=r"exclude_dirs length \(3\) exceeds limit \(2\)"):
+        analyze_project_dependencies(str(fixtures_dir), exclude_dirs=[*exclude_dirs, "absent-three"])
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +232,55 @@ def test_integration_osv_failure_leaves_audit_incomplete(
         assert report["compliant"] is False
         assert report["violations"] == []
         assert "INCOMPLETE" in report["summary"].upper()
+
+
+def test_integration_osv_id_without_severity_leaves_audit_incomplete(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "requirements.txt").write_text("test-package==1.0.0\n", encoding="utf-8")
+    monkeypatch.setattr(server.settings, "demo_mode", False)
+    monkeypatch.setattr(server, "_last_report", None)
+
+    def query_batch(packages: list[Package]) -> list[dict]:
+        assert [package.name for package in packages] == ["test-package"]
+        return [{"vulns": [{"id": "TEST-SYNTHETIC", "modified": "2026-01-01T00:00:00Z"}]}]
+
+    monkeypatch.setattr(vulnerability_scanner, "_query_osv_batch", query_batch)
+
+    scan = scan_vulnerabilities_tool(str(tmp_path))
+    audit = check_policy_compliance(
+        str(tmp_path), policy={"block_critical_cve": False, "block_high_cve": True}
+    )
+    resource = json.loads(server.resource_report_latest())
+
+    assert scan["vulnerability_scan_status"] == "ok"
+    (vulnerability,) = scan["vulnerabilities"]
+    assert vulnerability["id"] == "TEST-SYNTHETIC"
+    assert vulnerability["severity"] == "unknown"
+    for report in (audit, resource):
+        assert report["vulnerability_scan_status"] == "incomplete"
+        assert report["compliant"] is False
+        assert report["violations"] == []
+        assert "INCOMPLETE" in report["summary"]
+        assert "unknown severity" in report["summary"].lower()
+        assert "No policy violations detected." not in report["summary"]
+
+
+def test_integration_malformed_manifest_aborts_policy_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(server, "_last_report", None)
+    (tmp_path / "requirements.txt").write_text("test-package==1.0.0\n", encoding="utf-8")
+    check_policy_compliance(str(tmp_path))
+    previous_report = server.resource_report_latest()
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / "package.json").write_text("{", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"nested/package\.json"):
+        check_policy_compliance(str(tmp_path))
+
+    assert server.resource_report_latest() == previous_report
 
 
 @pytest.mark.parametrize(

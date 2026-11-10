@@ -229,6 +229,38 @@ def test_evaluate_compliance_high_cve_blocked_when_configured():
     assert any(v.type == "cve" for v in report.violations)
 
 
+@pytest.mark.parametrize(
+    ("block_critical_cve", "expected_compliant", "expected_status"),
+    [(True, False, "incomplete"), (False, True, "ok")],
+)
+def test_evaluate_compliance_unknown_severity(
+    block_critical_cve, expected_compliant, expected_status
+):
+    pkg = _make_package("uncertain-pkg", "1.0.0")
+    graph = _make_graph([pkg])
+    pkg_licenses = [_make_package_license(pkg, "MIT")]
+    policy = load_policy({"block_critical_cve": block_critical_cve, "block_high_cve": False})
+    vuln_report = VulnerabilityReport(
+        vulnerabilities=[
+            Vulnerability(
+                id="CVE-2024-UNKNOWN",
+                package_name=pkg.name,
+                package_version=pkg.version,
+                ecosystem="npm",
+                severity=Severity.UNKNOWN,
+            )
+        ],
+        counts_by_severity={"unknown": 1},
+        packages_scanned=1,
+    )
+
+    report = evaluate_compliance(graph, pkg_licenses, vuln_report, policy)
+
+    assert report.compliant is expected_compliant
+    assert report.violations == []
+    assert report.vulnerability_scan_status == expected_status
+
+
 def test_evaluate_compliance_unknown_license_blocked():
     """With deny_unknown_license=True, packages with unknown license → violation."""
     pkg = _make_package("mystery-pkg", "2.0.0")

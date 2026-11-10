@@ -198,7 +198,7 @@ docker run --rm -p 8000:8000 --memory=2048m --cpus=2 -e DEMO_MODE=true dependenc
 | `policy`       | object или string | нет          | Политика: объект с ключами allowed_licenses, denied_licenses, deny_unknown_license, block_critical_cve, block_high_cve либо путь к YAML/JSON файлу. Если не передан — используется политика по умолчанию. |
 | `exclude_dirs` | list[string]      | нет          | Директории, исключаемые из сканирования.                                                                                                                                                                  |
 
-**Результат:** `summary`, `compliant` (bool), `packages_checked`, `violations_count`, `violations`, `demo_mode` и `vulnerability_scan_status`. При статусе `unavailable` поле `compliant` равно `false`, сводка отмечает неполную проверку, а список сохраняет обнаруженные нарушения по лицензиям. Статус также доступен в `report://latest`.
+**Результат:** `summary`, `compliant` (bool), `packages_checked`, `violations_count`, `violations`, `demo_mode` и `vulnerability_scan_status`. При сбое запроса или неполном ответе OSV статус равен `unavailable`. Если политика запрещает уязвимости высокого или критического уровня, а серьёзность найденной уязвимости неизвестна, статус равен `incomplete`. В обоих случаях `compliant` равно `false`, сводка объясняет причину, а список сохраняет обнаруженные нарушения. Статус также доступен в `report://latest`.
 
 ---
 
@@ -233,7 +233,7 @@ docker run --rm -p 8000:8000 --memory=2048m --cpus=2 -e DEMO_MODE=true dependenc
 
 ### Что поддерживается
 
-- **Манифесты:** `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `requirements.txt`, `pyproject.toml`, `poetry.lock`.
+- **Манифесты:** `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `requirements.txt`, `pyproject.toml`, `poetry.lock`. Ошибка чтения или разбора найденного файла останавливает сканирование.
 - **Экосистемы:** npm (Node.js), PyPI (Python).
 - **Уязвимости:** OSV API. `DEMO_MODE=true` подходит для демонстрации без сети.
 - **Лицензии:** из метаданных манифестов; классификация permissive / copyleft / unknown / multiple.

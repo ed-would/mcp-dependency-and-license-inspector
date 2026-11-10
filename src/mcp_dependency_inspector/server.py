@@ -266,7 +266,8 @@ def scan_licenses_tool(
         "Use policy_path for a file path (e.g. demo_project/policy_strict.yaml) — plain text, no quotes. "
         "Or use policy: dict or JSON string path. "
         "Returns compliant, violations and vulnerability_scan_status. "
-        "An unavailable vulnerability check prevents a compliant result."
+        "An unavailable vulnerability check or unknown severity under a blocking CVE policy "
+        "prevents a compliant result."
     )
 )
 def check_policy_compliance(
@@ -325,7 +326,7 @@ def _check_policy(
         "violations_count": len(compliance.violations),
         "violations": [v.model_dump() for v in compliance.violations],
         "demo_mode": vuln_report.status == "demo",
-        "vulnerability_scan_status": vuln_report.status,
+        "vulnerability_scan_status": compliance.vulnerability_scan_status,
     }
 
 

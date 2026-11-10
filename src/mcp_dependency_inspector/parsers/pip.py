@@ -4,6 +4,8 @@ import logging
 import re
 from pathlib import Path
 
+import tomli
+
 from ..models.package import Ecosystem, Package
 
 logger = logging.getLogger(__name__)
@@ -49,19 +51,10 @@ def parse_requirements_txt(path: str) -> list[Package]:
     Handles: pkg==ver, pkg>=ver, pkg~=ver, pkg (no version → '*').
     Ignores -r includes, -c constraints, --index-url, etc.
     """
-    file_path = Path(path)
-    if not file_path.exists():
-        logger.warning("requirements.txt not found: %s", path)
-        return []
-
     packages: list[Package] = []
 
-    try:
-        with file_path.open("r", encoding="utf-8") as fh:
-            lines = fh.readlines()
-    except OSError as exc:
-        logger.warning("Failed to read %s: %s", path, exc)
-        return []
+    with Path(path).open("r", encoding="utf-8") as fh:
+        lines = fh.readlines()
 
     for raw_line in lines:
         line = raw_line.strip()
@@ -127,19 +120,8 @@ def parse_pyproject_toml(path: str) -> tuple[list[Package], dict[str, str]]:
     Reads [project].dependencies (PEP 517/518) and [tool.poetry.dependencies].
     Returns (packages, license_map) where license_map is {project_name: license_str}.
     """
-    file_path = Path(path)
-    if not file_path.exists():
-        logger.warning("pyproject.toml not found: %s", path)
-        return [], {}
-
-    try:
-        import tomli
-
-        with file_path.open("rb") as fh:
-            data = tomli.load(fh)
-    except Exception as exc:
-        logger.warning("Failed to parse %s: %s", path, exc)
-        return [], {}
+    with Path(path).open("rb") as fh:
+        data = tomli.load(fh)
 
     packages: list[Package] = []
     license_map: dict[str, str] = {}
@@ -207,24 +189,17 @@ def parse_pyproject_toml(path: str) -> tuple[list[Package], dict[str, str]]:
 
 def parse_poetry_lock(path: str) -> list[Package]:
     """Parse poetry.lock TOML. Read [[package]] sections for name and version."""
-    file_path = Path(path)
-    if not file_path.exists():
-        logger.warning("poetry.lock not found: %s", path)
-        return []
+    with Path(path).open("rb") as fh:
+        data = tomli.load(fh)
 
-    try:
-        import tomli
-
-        with file_path.open("rb") as fh:
-            data = tomli.load(fh)
-    except Exception as exc:
-        logger.warning("Failed to parse %s: %s", path, exc)
-        return []
+    lock_packages = data.get("package", [])
+    if not isinstance(lock_packages, list):
+        raise ValueError("poetry.lock package must be an array")
 
     packages: list[Package] = []
     seen: set[tuple[str, str]] = set()
 
-    for pkg in data.get("package", []):
+    for pkg in lock_packages:
         if not isinstance(pkg, dict):
             continue
         name = pkg.get("name", "")

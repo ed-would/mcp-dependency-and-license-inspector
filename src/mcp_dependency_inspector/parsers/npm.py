@@ -1,13 +1,12 @@
 """Parsers for Node.js / NPM manifest and lock files."""
 
 import json
-import logging
 import re
 from pathlib import Path
 
-from ..models.package import Ecosystem, Package
+from ruamel.yaml import YAML
 
-logger = logging.getLogger(__name__)
+from ..models.package import Ecosystem, Package
 
 _VERSION_PREFIX_RE = re.compile(r"^[~^>=<!]+")
 
@@ -24,17 +23,11 @@ def parse_package_json(path: str) -> tuple[list[Package], dict[str, str]]:
     license_map: {name: license_str} collected from the root "license" key.
     Version specifiers are cleaned (^ ~ >= etc. stripped).
     """
-    file_path = Path(path)
-    if not file_path.exists():
-        logger.warning("package.json not found: %s", path)
-        return [], {}
+    with Path(path).open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
 
-    try:
-        with file_path.open("r", encoding="utf-8") as fh:
-            data = json.load(fh)
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Failed to parse %s: %s", path, exc)
-        return [], {}
+    if not isinstance(data, dict):
+        raise ValueError("package.json root must be an object")
 
     packages: list[Package] = []
     license_map: dict[str, str] = {}
@@ -63,10 +56,10 @@ def parse_package_json(path: str) -> tuple[list[Package], dict[str, str]]:
     for section in dep_sections:
         deps = data.get(section, {})
         if not isinstance(deps, dict):
-            continue
+            raise ValueError(f"package.json {section} must be an object")
         for name, version_spec in deps.items():
-            if not isinstance(name, str) or not isinstance(version_spec, str):
-                continue
+            if not isinstance(version_spec, str):
+                raise ValueError(f"package.json {section} versions must be strings")
             version = _clean_version(version_spec)
             key = (name, version)
             if key in seen:
@@ -90,17 +83,11 @@ def parse_package_lock_json(path: str) -> list[Package]:
     Skips the root entry (key ""). Marks packages as direct=False
     for transitive entries resolved from nested node_modules paths.
     """
-    file_path = Path(path)
-    if not file_path.exists():
-        logger.warning("package-lock.json not found: %s", path)
-        return []
+    with Path(path).open("r", encoding="utf-8") as fh:
+        data = json.load(fh)
 
-    try:
-        with file_path.open("r", encoding="utf-8") as fh:
-            data = json.load(fh)
-    except (json.JSONDecodeError, OSError) as exc:
-        logger.warning("Failed to parse %s: %s", path, exc)
-        return []
+    if not isinstance(data, dict):
+        raise ValueError("package-lock.json root must be an object")
 
     packages: list[Package] = []
     seen: set[tuple[str, str]] = set()
@@ -108,7 +95,7 @@ def parse_package_lock_json(path: str) -> list[Package]:
     # v2/v3 format uses "packages" dict
     lock_packages = data.get("packages", {})
     if not isinstance(lock_packages, dict):
-        return []
+        raise ValueError("package-lock.json packages must be an object")
 
     for key, pkg_data in lock_packages.items():
         if key == "":
@@ -148,23 +135,12 @@ def parse_package_lock_json(path: str) -> list[Package]:
 
 def parse_pnpm_lock(path: str) -> list[Package]:
     """Parse pnpm-lock.yaml. Extract packages section, return Package list."""
-    file_path = Path(path)
-    if not file_path.exists():
-        logger.warning("pnpm-lock.yaml not found: %s", path)
-        return []
-
-    try:
-        from ruamel.yaml import YAML
-
-        yaml = YAML(typ="safe")
-        with file_path.open("r", encoding="utf-8") as fh:
-            data = yaml.load(fh)
-    except Exception as exc:
-        logger.warning("Failed to parse %s: %s", path, exc)
-        return []
+    yaml = YAML(typ="safe")
+    with Path(path).open("r", encoding="utf-8") as fh:
+        data = yaml.load(fh)
 
     if not isinstance(data, dict):
-        return []
+        raise ValueError("pnpm-lock.yaml root must be a mapping")
 
     packages: list[Package] = []
     seen: set[tuple[str, str]] = set()
@@ -172,7 +148,7 @@ def parse_pnpm_lock(path: str) -> list[Package]:
     # pnpm-lock.yaml v6+ uses "packages" dict with keys like "/name@version"
     lock_packages = data.get("packages", {})
     if not isinstance(lock_packages, dict):
-        return []
+        raise ValueError("pnpm-lock.yaml packages must be a mapping")
 
     for pkg_key, pkg_data in lock_packages.items():
         if not isinstance(pkg_key, str):

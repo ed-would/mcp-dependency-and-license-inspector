@@ -80,6 +80,42 @@ def test_scan_project_empty_directory(tmp_path):
     assert len(graph.packages) == 0
 
 
+@pytest.mark.parametrize(
+    ("filename", "content"),
+    [
+        pytest.param("package.json", b"null", id="npm-non-object"),
+        pytest.param("package.json", b'{"dependencies": []}', id="npm-invalid-section"),
+        pytest.param("package.json", b'{"dependencies": {"lodash": null}}', id="npm-invalid-version"),
+        ("package-lock.json", b"{"),
+        ("pnpm-lock.yaml", b"packages: ["),
+        ("requirements.txt", b"\xff\xfe"),
+        ("pyproject.toml", b"[project"),
+        ("poetry.lock", b"[package"),
+    ],
+)
+def test_scan_project_rejects_broken_recognized_manifest(tmp_path, filename, content):
+    """A discovered manifest must fail closed with only its relative name."""
+    manifest = tmp_path / filename
+    manifest.write_bytes(content)
+
+    with pytest.raises(ValueError) as error:
+        scan_project(str(tmp_path))
+
+    message = str(error.value)
+    assert message == f"Failed to parse manifest {filename!r}"
+    assert str(tmp_path) not in message
+
+
+def test_scan_project_accepts_empty_json_manifest(tmp_path):
+    """An empty JSON object is a valid manifest with no dependencies."""
+    (tmp_path / "package.json").write_text("{}", encoding="utf-8")
+
+    graph, metadata = scan_project(str(tmp_path))
+
+    assert graph.packages == []
+    assert metadata == {}
+
+
 def test_scan_project_npm_packages_have_npm_ecosystem(tmp_path):
     pkg_json = tmp_path / "package.json"
     pkg_json.write_text(

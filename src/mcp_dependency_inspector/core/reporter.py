@@ -148,7 +148,7 @@ def format_compliance_report(report: ComplianceReport) -> str:
     """Return a Markdown compliance report with overall status and violation details."""
     lines = ["## Compliance Report", ""]
 
-    incomplete = report.vulnerability_scan_status == "unavailable"
+    incomplete = report.vulnerability_scan_status in {"unavailable", "incomplete"}
     if incomplete:
         status_icon = "⚠️ INCOMPLETE"
     else:
@@ -156,8 +156,13 @@ def format_compliance_report(report: ComplianceReport) -> str:
     lines.append(f"**Status:** {status_icon}")
     lines.append(f"**Packages checked:** {report.packages_checked}")
     lines.append(f"**Violations found:** {len(report.violations)}")
-    if incomplete:
+    if report.vulnerability_scan_status == "unavailable":
         lines.append("**Vulnerability scan:** OSV was unavailable or returned incomplete data.")
+    elif report.vulnerability_scan_status == "incomplete":
+        lines.append(
+            "**Vulnerability scan:** One or more findings have unknown severity, "
+            "so the blocking CVE rules could not be evaluated for all findings."
+        )
     elif report.vulnerability_scan_status == "demo":
         lines.append("**Vulnerability scan:** DEMO. Results use fixture vulnerability data.")
     lines.append("")

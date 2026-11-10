@@ -1,6 +1,9 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
-from .vulnerability import VulnerabilityScanStatus
+
+ComplianceScanStatus = Literal["ok", "demo", "unavailable", "incomplete"]
 
 
 class PolicyConfig(BaseModel):
@@ -23,4 +26,4 @@ class ComplianceReport(BaseModel):
     compliant: bool
     violations: list[PolicyViolation]
     packages_checked: int
-    vulnerability_scan_status: VulnerabilityScanStatus | None = None
+    vulnerability_scan_status: ComplianceScanStatus | None = None

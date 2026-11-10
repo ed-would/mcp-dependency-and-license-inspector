@@ -7,6 +7,8 @@ from pathlib import Path
 from stat import S_ISREG
 from typing import Callable
 
+from ruamel.yaml.error import YAMLError
+
 from ..config import settings
 from ..models.package import DependencyGraph, Ecosystem, Package
 from ..parsers.npm import parse_package_json, parse_package_lock_json, parse_pnpm_lock
@@ -69,14 +71,13 @@ def scan_project(
             file_path = os.path.join(dirpath, filename)
             parser, _ecosystem, has_license_map = _MANIFEST_PARSERS[filename]
 
-            logger.debug("Parsing manifest: %s", file_path)
-
             relative_path = os.path.relpath(file_path, project_path)
+            logger.debug("Parsing manifest: %r", relative_path)
             try:
                 resolved_path = Path(file_path).resolve(strict=True)
-            except (OSError, RuntimeError) as exc:
-                logger.warning("Could not resolve manifest %s: %s", file_path, exc)
-                continue
+            except (OSError, RuntimeError):
+                logger.warning("Could not resolve manifest %r", relative_path)
+                raise ValueError(f"Failed to access manifest {relative_path!r}") from None
 
             if allowed_base is not None and not resolved_path.is_relative_to(allowed_base):
                 raise ValueError(
@@ -85,9 +86,9 @@ def scan_project(
 
             try:
                 file_stat = resolved_path.stat()
-            except OSError as exc:
-                logger.warning("Could not read manifest size for %s: %s", file_path, exc)
-                continue
+            except OSError:
+                logger.warning("Could not read manifest size for %r", relative_path)
+                raise ValueError(f"Failed to access manifest {relative_path!r}") from None
             if not S_ISREG(file_stat.st_mode):
                 raise ValueError(f"Manifest file {relative_path!r} is not a regular file")
             file_size = file_stat.st_size
@@ -110,9 +111,10 @@ def scan_project(
                 else:
                     raw = parser(str(resolved_path))
                     pkgs = raw if isinstance(raw, list) else []
-            except Exception as exc:
-                logger.warning("Unexpected error parsing %s: %s", file_path, exc)
-                continue
+            except (OSError, ValueError, TypeError, YAMLError, RecursionError):
+                # Parser diagnostics can include file contents and resolved paths.
+                logger.warning("Failed to parse manifest %r", relative_path)
+                raise ValueError(f"Failed to parse manifest {relative_path!r}") from None
 
             for pkg in pkgs:
                 dedup_key = (pkg.name, pkg.version, pkg.ecosystem.value)

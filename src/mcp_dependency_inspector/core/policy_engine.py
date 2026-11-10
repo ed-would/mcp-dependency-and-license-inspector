@@ -8,7 +8,7 @@ from ruamel.yaml.error import YAMLError
 
 from ..models.license_model import LicenseCategory, PackageLicense
 from ..models.package import DependencyGraph
-from ..models.policy import ComplianceReport, PolicyConfig, PolicyViolation
+from ..models.policy import ComplianceReport, ComplianceScanStatus, PolicyConfig, PolicyViolation
 from ..models.vulnerability import Severity, VulnerabilityReport
 
 
@@ -152,10 +152,22 @@ def evaluate_compliance(
                     )
                 )
 
+    vulnerability_scan_status: ComplianceScanStatus | None = (
+        vuln_report.status if vuln_report else None
+    )
+    # A blocking CVE rule needs severity data for every finding.
+    if (
+        vuln_report
+        and vuln_report.status != "unavailable"
+        and (policy.block_critical_cve or policy.block_high_cve)
+        and any(v.severity == Severity.UNKNOWN for v in vuln_report.vulnerabilities)
+    ):
+        vulnerability_scan_status = "incomplete"
+
     return ComplianceReport(
         compliant=len(violations) == 0
-        and (vuln_report is None or vuln_report.status != "unavailable"),
+        and vulnerability_scan_status not in {"unavailable", "incomplete"},
         violations=violations,
         packages_checked=packages_checked,
-        vulnerability_scan_status=vuln_report.status if vuln_report else None,
+        vulnerability_scan_status=vulnerability_scan_status,
     )

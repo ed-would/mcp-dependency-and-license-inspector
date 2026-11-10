@@ -77,10 +77,9 @@ def test_parse_package_json_version_cleaned(sample_package_json):
     assert lodash.version == "4.17.15"
 
 
-def test_parse_nonexistent_file_returns_empty():
-    packages, license_map = parse_package_json("/nonexistent/does_not_exist/package.json")
-    assert packages == []
-    assert license_map == {}
+def test_parse_nonexistent_file_raises():
+    with pytest.raises(FileNotFoundError):
+        parse_package_json("/nonexistent/does_not_exist/package.json")
 
 
 def test_parse_requirements_txt_returns_packages(sample_requirements_txt):
@@ -118,9 +117,9 @@ def test_parse_empty_requirements_returns_empty():
     assert packages == []
 
 
-def test_parse_requirements_txt_nonexistent_returns_empty():
-    packages = parse_requirements_txt("/nonexistent/does_not_exist/requirements.txt")
-    assert packages == []
+def test_parse_requirements_txt_nonexistent_raises():
+    with pytest.raises(FileNotFoundError):
+        parse_requirements_txt("/nonexistent/does_not_exist/requirements.txt")
 
 
 # ---------------------------------------------------------------------------
@@ -148,10 +147,9 @@ def test_parse_pyproject_toml_license(sample_pyproject_toml):
     assert license_map["sample-py-project"] == "Apache-2.0"
 
 
-def test_parse_pyproject_toml_nonexistent_returns_empty():
-    packages, license_map = parse_pyproject_toml("/nonexistent/does_not_exist/pyproject.toml")
-    assert packages == []
-    assert license_map == {}
+def test_parse_pyproject_toml_nonexistent_raises():
+    with pytest.raises(FileNotFoundError):
+        parse_pyproject_toml("/nonexistent/does_not_exist/pyproject.toml")
 
 
 def test_parse_pyproject_toml_skips_python_dep(sample_pyproject_toml):
@@ -165,9 +163,9 @@ def test_parse_pyproject_toml_skips_python_dep(sample_pyproject_toml):
 # ---------------------------------------------------------------------------
 
 
-def test_parse_package_lock_json_nonexistent_returns_empty():
-    packages = parse_package_lock_json("/nonexistent/package-lock.json")
-    assert packages == []
+def test_parse_package_lock_json_nonexistent_raises():
+    with pytest.raises(FileNotFoundError):
+        parse_package_lock_json("/nonexistent/package-lock.json")
 
 
 def test_parse_package_lock_json_valid(tmp_path):
